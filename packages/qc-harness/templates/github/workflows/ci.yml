@@ -1,0 +1,18 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version-file: package.json }
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm gate:test
+      - run: pnpm spec:check
+      - run: pnpm dup:check
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test

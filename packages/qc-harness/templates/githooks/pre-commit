@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# A human is bound by exactly what binds an agent.
+set -euo pipefail
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|mjs)$' || true)
+[ -z "$STAGED" ] && exit 0
+npx eslint $STAGED --max-warnings 0
+npx qc check
+npx tsc -b --pretty false

@@ -160,6 +160,12 @@ export const defaults = {
   // Extra pipeline steps a repo composes in. The CLI never hardcodes a project's chain.
   pipeline: [],
 
+  // Files the browser rules apply to.
+  clientFiles: ["frontend/src/**/*.{ts,tsx}"],
+
+  // Tooling names the vocabulary it bans, so it trips its own checks.
+  toolingFiles: ["scripts/**/*.mjs", "**/*.test.{ts,tsx,mjs}"],
+
   ignores: ["**/dist/**", "**/node_modules/**", "**/*.tsbuildinfo"],
 };
 
