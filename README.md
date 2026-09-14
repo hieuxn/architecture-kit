@@ -1,63 +1,70 @@
 # architecture-kit
 
-The architecture, and everything that enforces it, extracted so a new repository starts with both.
+An architecture, and everything that enforces it, packaged so a new repository starts with both.
 
-Two artifacts live here. They install differently and cannot merge.
+Vertical slices over a thin shared kernel. Tenant isolation at three independent levels. Guards for
+create, update and offline replay that are deliberately three different mechanisms. Every rule ships
+beside the check that enforces it — and every check ships a case that must fail.
 
-| Artifact | Install | Holds |
+## Two halves
+
+| | Install | Holds |
 |---|---|---|
-| Claude Code plugin `architecture` | `claude plugin install` | hooks, skills, slash commands |
-| npm package `architecture-harness` | `pnpm add -D` | gates, lint rules, the `qc` CLI, doc templates |
+| Plugin `architecture` | `claude plugin install` | agent hooks, 4 skills, 3 slash commands |
+| Package `architecture-harness` | `pnpm add -D` | 11 gates, 10 lint rules, the `qc` CLI, doc templates |
 
-The plugin's hooks call the package's CLI. Either half works without the other: the package is a
-normal dev dependency, and the plugin's hooks no-op in any repository with no `qc.config.json`.
+The plugin's hooks call the package's CLI. Either half works alone: the package is an ordinary dev
+dependency, and the plugin no-ops in any repository without a `qc.config.json`.
 
-## Start a new repository
+## Tutorial
+
+### 1. Set up a repository
 
 ```bash
 pnpm add -D architecture-harness
-npx qc init            # decisions, architecture and enforcement docs, config, git hook, CI
-npx qc install-hooks
-npx qc feature orders  # scaffold a feature in the right anatomy
-npx qc check
+npx qc init            # decisions, architecture & enforcement docs, config, git hook, CI
+npx qc install-hooks   # binds .githooks/pre-commit
 ```
 
 `qc init` is not a convenience. The citations gate reads `docs/decisions.md`; without that file the
-first gate fails on every source file in the repository.
+first gate fails on every source file you have.
 
-Then install the plugin so an agent is held to the same rules a human is:
+It writes `qc.config.json`, `quality-thresholds.json`, `.jscpd.json`, `docs/` (decisions,
+architecture, enforcement, guards, performance, glossary, ui), `.githooks/pre-commit` and
+`.github/workflows/ci.yml`, skipping anything that already exists. It also adds `spec:check`,
+`gen:feature` and `prepare` to `package.json`.
+
+### 2. Make it yours
+
+- **`docs/decisions.md`** — delete what does not apply, add what you have already decided. Ids are
+  stable: never renumber, because every citation points at a number.
+- **`docs/glossary.md`** and the per-surface table in **`docs/performance.md`** — replace entirely.
+- **`qc.config.json`** — point it at your layout where it differs. `npx qc config` prints what is in
+  force after defaults merge.
+
+Turn off, under `gates` and `rules`, whatever this repository genuinely lacks — workers, an edge
+service, a contract directory. Do not weaken a gate that applies.
+
+### 3. Scaffold a feature
 
 ```bash
-claude plugin marketplace add <your-org>/architecture-kit
-claude plugin install architecture
+npx qc feature orders          # bounded vertical slices
+npx qc feature orders --flat   # the flat pipeline anatomy, for a single-operation feature
 ```
 
-## What the architecture is
+Never hand-build the folder. The generator is what makes a wrong anatomy impossible. An empty block
+or slice is a review finding, so fill each file or delete the ones the feature does not need.
 
-Vertical slices over a thin shared kernel. `infrastructure` → `adapters` → `application` →
-`domain`, one legal direction, enforced by lint because the compiler cannot. A feature is a bounded
-vertical slice (`index`, `schema`, `trigger`, `slices/`, `shared/`) or a flat pipeline for a narrow
-single-operation feature. Tenant isolation is three independent levels. Keyset pagination only.
-Guards for create, interactive update and offline replay are three different mechanisms and must not
-be reconciled.
+### 4. Check
 
-The whole register is `packages/qc-harness/templates/docs/decisions.md`, which `qc init` copies into
-the repository. Ids are stable and never renumbered: every citation points at a number.
-
-## What enforces it
-
-Ten ESLint rules and eleven structural gates, each with a case that must fail — ADR-0032.
-
-```
-qc check          every structural gate
-qc check <file>   the fast per-file path a post-edit hook takes
-qc feature <name> scaffold a feature
-qc init           scaffold the docs, config, hook and workflow
-qc install-hooks  point git at .githooks
-qc config         the configuration in force, after defaults merge
+```bash
+npx qc check          # every structural gate
+npx qc check <file>   # the fast per-file path a post-edit hook takes
 ```
 
-Lint is a preset, so a consumer's `eslint.config.mjs` is an import rather than a copy:
+### 5. Lint
+
+Replace your eslint config with the preset, so rules and thresholds are imported, never restated:
 
 ```js
 import { preset } from "architecture-harness/preset";
@@ -66,29 +73,57 @@ import tsparser from "@typescript-eslint/parser";
 import boundaries from "eslint-plugin-boundaries";
 import sonarjs from "eslint-plugin-sonarjs";
 
-export default [
-  ...preset({
-    plugins: { tseslint, boundaries, sonarjs },
-    languageOptions: { parser: tsparser, ecmaVersion: 2023, sourceType: "module" },
-  }),
-];
+export default preset({
+  plugins: { tseslint, boundaries, sonarjs },
+  languageOptions: { parser: tsparser, ecmaVersion: 2023, sourceType: "module" },
+});
 ```
+
+### 6. Hold an agent to the same rules
+
+```bash
+claude plugin marketplace add hieuxn/architecture-kit
+claude plugin install architecture
+```
+
+A fast per-file pass runs after every edit; a full pass refuses to end a turn while the repository is
+red. Add your own step to that full pass with `QC_STOP_EXTRA` in `.claude/settings.json`:
+
+```json
+{ "env": { "QC_STOP_EXTRA": "node scripts/headless-e2e.mjs" } }
+```
+
+A consuming repository keeps no hook scripts of its own.
+
+## What it enforces
+
+**Lint** — `no-cross-feature-internals`, `storage-only-in-resource`, `scoped-repository`,
+`tenant-scoped-table`, `no-offset-pagination`, `no-status-literal`, `signal-last-param`,
+`no-raw-fetch`, `no-orchestration-in-trigger`, `no-number-in-comment`.
+
+**Gates**, for what lint cannot see — feature anatomy; citations (every cited id resolves, no
+dangling doc path, no reference to another repository); the tenant predicate (every statement on a
+business table filters on the tenant, including the one nobody wrote a test for); SQL identifiers (a
+query names a column a migration declares); public and internal route agreement; claimed
+requirements; headless pipelines; registry agreement.
+
+Two more are generators your codegen imports rather than checks `qc check` runs: `tenant-tables`
+(the row-level-security policy file) and `contract-compose`.
 
 ## Configuration
 
-Everything a gate or rule could hardcode is a key in `qc.config.json`, and every key has a default
-that reproduces the reference layout — a repository that matches it writes no config at all. Run
-`qc config` to print what is in force.
+Every constant a gate could hardcode is a key in `qc.config.json`, and every key defaults to the
+reference layout — a repository that matches it writes no config at all. Feature roots, layer set,
+tenant column, ORM, the one module that may call `fetch`, the anatomy taxonomy, and an on/off switch
+per gate and per rule.
 
-The keys that matter most when adopting: `featureRoots`, `paths`, `layers`, `tenant`, `apiClient`,
-`presenters`, `anatomy`, and the `gates` and `rules` switches. Turn off what the repository
-genuinely lacks; do not weaken a gate that applies.
-
-`src/config.test.mjs` asserts the switch maps and the real rule and gate names agree, so a rename
-cannot silently disable a check.
+A test fails if a switch ever stops reaching the runner, so the config cannot quietly lie about what
+it controls.
 
 ## Tests
 
 ```bash
-pnpm test   # 10 rules, 11 gates, every knob, every must-fail case
+pnpm test   # 125: every rule, every gate, every knob, each with a case that must fail
 ```
+
+CI also scaffolds a repository from an empty directory and requires a green `qc check`.
