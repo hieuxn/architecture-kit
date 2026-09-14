@@ -1,0 +1,340 @@
+import { RuleTester } from "eslint";
+import { rules } from "./index.mjs";
+
+const tester = new RuleTester({
+  languageOptions: { ecmaVersion: 2023, sourceType: "module" },
+});
+
+// Every rule is proven by a case that must fail. A gate that has never failed
+// has never been tested. ADR-0032.
+
+console.log("→", "no-number-in-comment");
+tester.run("no-number-in-comment", rules["no-number-in-comment"], {
+  valid: [
+    { code: "// docs/performance.md owns the budget\nconst a = 1;" },
+    { code: "// ADR-0052 — the version check is the guard\nconst a = 1;" },
+    { code: "// REQ-PHO-003\nconst a = 1;" },
+    { code: "// uuidV7 is time-ordered\nconst a = 1;" },
+    { code: "// the one place a caller resolves a name\nconst a = 1;" },
+  ],
+  invalid: [
+    { code: "// retry up to 3 times\nconst a = 1;", errors: [{ messageId: "number" }] },
+    { code: "/* budget is 16 ms */\nconst a = 1;", errors: [{ messageId: "number" }] },
+    { code: "// retry up to three times\nconst a = 1;", errors: [{ messageId: "number" }] },
+    { code: "/* budget is sixteen ms */\nconst a = 1;", errors: [{ messageId: "number" }] },
+    { code: "// wait five seconds\nconst a = 1;", errors: [{ messageId: "number" }] },
+  ],
+});
+
+console.log("→", "no-cross-feature-internals");
+tester.run("no-cross-feature-internals", rules["no-cross-feature-internals"], {
+  valid: [
+    { code: "import { pins } from '../pins/index.js';", filename: "/a/features/photos/pipeline.ts" },
+    { code: "import { pins } from '../../pins/index.js';", filename: "/a/features/photos/slices/create.ts" },
+    { code: "import { pins } from '../../pins';", filename: "/a/features/photos/slices/create.ts" },
+    { code: "import { x } from './resource.js';", filename: "/a/features/photos/pipeline.ts" },
+    { code: "import { y } from '../photos/resource.js';", filename: "/a/features/photos/pipeline.ts" },
+  ],
+  invalid: [
+    {
+      code: "import { x } from '../pins/resource.js';",
+      filename: "/a/features/photos/pipeline.ts",
+      errors: [{ messageId: "internal" }],
+    },
+    {
+      code: "import { x } from '../../pins/shared/index.js';",
+      filename: "/a/features/photos/slices/create.ts",
+      errors: [{ messageId: "internal" }],
+    },
+    {
+      code: "import { x } from '../../pins/slices/create-pin.js';",
+      filename: "/a/features/photos/slices/create.ts",
+      errors: [{ messageId: "internal" }],
+    },
+  ],
+});
+
+console.log("→", "storage-only-in-resource");
+tester.run("storage-only-in-resource", rules["storage-only-in-resource"], {
+  valid: [{ code: "import { eq } from 'drizzle-orm';", filename: "/a/features/pins/resource.ts" }],
+  invalid: [
+    {
+      code: "import { eq } from 'drizzle-orm';",
+      filename: "/a/features/pins/pipeline.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+  ],
+});
+
+console.log("→", "no-raw-fetch");
+tester.run("no-raw-fetch", rules["no-raw-fetch"], {
+  valid: [
+    { code: "await fetch(url);", filename: "/a/platform/api-client.ts" },
+    { code: "await client.get(path);", filename: "/a/features/pins/index.ts" },
+  ],
+  invalid: [
+    { code: "await fetch(url);", filename: "/a/features/pins/index.ts", errors: [{ messageId: "raw" }] },
+    { code: "new URL(path);", filename: "/a/features/pins/index.ts", errors: [{ messageId: "raw" }] },
+  ],
+});
+
+console.log("→", "no-status-literal");
+tester.run("no-status-literal", rules["no-status-literal"], {
+  valid: ["throw new ConflictError();", "reply.status(status);"],
+  invalid: [{ code: "reply.status(409);", errors: [{ messageId: "literal" }] }],
+});
+
+console.log("→", "storage-only-in-resource path");
+tester.run("storage-only-in-resource", rules["storage-only-in-resource"], {
+  valid: [
+    { code: 'import { Pool } from "pg";', filename: "backend/src/infrastructure/db/pg-pool.ts" },
+    { code: 'import { drizzle } from "drizzle-orm";', filename: "backend/src/features/pins/resource.ts" },
+  ],
+  invalid: [
+    {
+      code: 'import { Pool } from "pg";',
+      filename: "backend/src/features/pins/pipeline.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import { Pool } from "pg";',
+      filename: "backend/src/infrastructure/http/router.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+  ],
+});
+
+console.log("→", "no-offset-pagination");
+tester.run("no-offset-pagination", rules["no-offset-pagination"], {
+  valid: ["const q = { limit, cursor };"],
+  invalid: [
+    { code: "const q = { limit, offset };", errors: [{ messageId: "offset" }] },
+    { code: "query.skip;", errors: [{ messageId: "offset" }] },
+  ],
+});
+
+console.log("→", "scoped-repository");
+tester.run("scoped-repository", rules["scoped-repository"], {
+  valid: ["register({ pinRepository: asClass(PinRepository).scoped() });"],
+  invalid: [
+    {
+      code: "register({ pinRepository: asClass(PinRepository).singleton() });",
+      errors: [{ messageId: "singleton" }],
+    },
+    {
+      code: "register({ analyzeSaga: asClass(AnalyzePhotoSaga).singleton() });",
+      errors: [{ messageId: "singleton" }],
+    },
+    {
+      code: "register({ unitOfWorkFactory: asClass(PostgresUnitOfWorkFactory).singleton() });",
+      errors: [{ messageId: "singleton" }],
+    },
+  ],
+});
+
+console.log("→", "signal-last-param");
+tester.run("signal-last-param", rules["signal-last-param"], {
+  valid: [
+    "export async function load(id, signal) {}",
+    "export const load = async (id, signal) => {};",
+    "export function pure(id) {}",
+  ],
+  invalid: [
+    { code: "export async function load(id) {}", errors: [{ messageId: "missing" }] },
+    { code: "export const load = async (id) => {};", errors: [{ messageId: "missing" }] },
+  ],
+});
+
+console.log("→", "tenant-scoped-table");
+tester.run("tenant-scoped-table", rules["tenant-scoped-table"], {
+  valid: [
+    "pgTable('pins', { id: uuid('id'), tenantId: uuid('tenant_id') });",
+    "index('pins_partition_idx').on(t.capturedAt, t.id)",
+  ],
+  invalid: [
+    { code: "pgTable('pins', { id: uuid('id') });", errors: [{ messageId: "missing" }] },
+    { code: "index('pins_project_idx').on(t.projectId, t.id)", errors: [{ messageId: "indexOrder" }] },
+  ],
+});
+
+console.log("→", "no-orchestration-in-trigger");
+tester.run("no-orchestration-in-trigger", rules["no-orchestration-in-trigger"], {
+  valid: [
+    { code: "async function handle() { await runJacicExportSaga(); }", filename: "/repo/frontend/src/features/pins/trigger.tsx" },
+    { code: "function handle() { mutate(); }", filename: "/repo/frontend/src/features/pins/trigger.tsx" },
+    { code: "async function a() { await f1(); }\nasync function b() { await f2(); }", filename: "/repo/frontend/src/features/pins/trigger.tsx" },
+    { code: "async function saga() { await f1(); await f2(); }", filename: "/repo/frontend/src/features/pins/pipeline.ts" },
+    { code: "it('works', async () => { await s1(); await s2(); });", filename: "/repo/frontend/src/features/pins/trigger.test.tsx" },
+  ],
+  invalid: [
+    {
+      code: "async function handle() { await stepA(); await stepB(); }",
+      filename: "/repo/frontend/src/features/pins/trigger.tsx",
+      errors: [{ messageId: "orchestration" }],
+    },
+    {
+      code: "const handle = async () => { await stepA(); await stepB(); await stepC(); };",
+      filename: "/repo/frontend/src/features/pins/trigger.tsx",
+      errors: [{ messageId: "orchestration" }, { messageId: "orchestration" }],
+    },
+  ],
+});
+
+console.log("all rule fixtures asserted");
+
+tester.run("no-number-in-comment (layer names)", rules["no-number-in-comment"], {
+  valid: [
+    { code: "// domain imports nothing\nconst a = 1;" },
+    { code: "// adapters never imports Fastify\nconst a = 1;" },
+    { code: "// WCAG 2.2 AA\nconst a = 1;" },
+    { code: "// D8 — the renderer deviation\nconst a = 1;" },
+  ],
+  invalid: [{ code: "// wait 500 ms\nconst a = 1;", errors: [{ messageId: "number" }] }],
+});
+console.log("layer-name fixtures asserted");
+
+tester.run("no-number-in-comment (local decision ids)", rules["no-number-in-comment"], {
+  valid: [
+    { code: "// QC-004 — the renderer\nconst a = 1;" },
+    { code: "// QC-005 applies to this loop\nconst a = 1;" },
+  ],
+  invalid: [{ code: "// budget is 16 ms\nconst a = 1;", errors: [{ messageId: "number" }] }],
+});
+console.log("local decision id fixtures asserted");
+
+// --- Options ---
+// A knob that is never exercised is a knob that does not work. Each case below
+// proves the rule follows the config rather than the reference layout. ADR-0032.
+
+console.log("→", "options: no-raw-fetch client");
+tester.run("no-raw-fetch", rules["no-raw-fetch"], {
+  valid: [{ code: "fetch('/x');", filename: "/a/net/http.ts", options: [{ client: "net/http.ts" }] }],
+  invalid: [
+    {
+      code: "fetch('/x');",
+      filename: "/a/platform/api-client.ts",
+      options: [{ client: "net/http.ts" }],
+      errors: [{ messageId: "raw" }],
+    },
+  ],
+});
+
+console.log("→", "options: no-cross-feature-internals featureDir");
+tester.run("no-cross-feature-internals", rules["no-cross-feature-internals"], {
+  valid: [
+    {
+      code: "import { x } from '../pins/public.js';",
+      filename: "/a/modules/photos/flow.ts",
+      options: [{ featureDir: "modules", publicFile: "public" }],
+    },
+  ],
+  invalid: [
+    {
+      code: "import { x } from '../pins/store.js';",
+      filename: "/a/modules/photos/flow.ts",
+      options: [{ featureDir: "modules", publicFile: "public" }],
+      errors: [{ messageId: "internal" }],
+    },
+  ],
+});
+
+console.log("→", "options: storage-only-in-resource modules and files");
+tester.run("storage-only-in-resource", rules["storage-only-in-resource"], {
+  valid: [
+    {
+      code: "import { x } from 'kysely';",
+      filename: "/a/features/pins/store.ts",
+      options: [{ modules: ["kysely"], resourceFiles: ["store.ts"], driverBinding: "" }],
+    },
+  ],
+  invalid: [
+    {
+      code: "import { x } from 'kysely';",
+      filename: "/a/features/pins/resource.ts",
+      options: [{ modules: ["kysely"], resourceFiles: ["store.ts"], driverBinding: "" }],
+      errors: [{ messageId: "misplaced" }],
+    },
+  ],
+});
+
+console.log("→", "options: tenant-scoped-table column and factory");
+tester.run("tenant-scoped-table", rules["tenant-scoped-table"], {
+  valid: [
+    {
+      code: "const t = table('pins', { orgId: uuid(), name: text() });",
+      options: [{ column: "orgId", tableFactory: "table" }],
+    },
+  ],
+  invalid: [
+    {
+      code: "const t = table('pins', { tenantId: uuid(), name: text() });",
+      options: [{ column: "orgId", tableFactory: "table" }],
+      errors: [{ messageId: "missing" }],
+    },
+  ],
+});
+
+console.log("→", "options: scoped-repository suffixes");
+tester.run("scoped-repository", rules["scoped-repository"], {
+  valid: [{ code: "c.register(asClass(PinRepository).singleton());", options: [{ suffixes: ["Store"] }] }],
+  invalid: [
+    {
+      code: "c.register(asClass(PinStore).singleton());",
+      options: [{ suffixes: ["Store"] }],
+      errors: [{ messageId: "singleton" }],
+    },
+  ],
+});
+
+console.log("→", "options: signal-last-param name");
+tester.run("signal-last-param", rules["signal-last-param"], {
+  valid: [{ code: "export async function load(id, token) {}", options: [{ name: "token" }] }],
+  invalid: [
+    {
+      code: "export async function load(id, signal) {}",
+      options: [{ name: "token" }],
+      errors: [{ messageId: "missing" }],
+    },
+  ],
+});
+
+console.log("→", "options: no-number-in-comment prefixes");
+tester.run("no-number-in-comment", rules["no-number-in-comment"], {
+  valid: [{ code: "// RFC-0012 decided it\nconst a = 1;", options: [{ prefixes: ["RFC"] }] }],
+  invalid: [
+    { code: "// ADR-0052 decided it\nconst a = 1;", options: [{ prefixes: ["RFC"], external: [] }], errors: [{ messageId: "number" }] },
+  ],
+});
+
+console.log("→", "options: no-orchestration-in-trigger presenters");
+tester.run("no-orchestration-in-trigger", rules["no-orchestration-in-trigger"], {
+  valid: [
+    {
+      code: "async function go() { await a(); await b(); }",
+      filename: "/a/frontend/src/features/pins/trigger.tsx",
+      options: [{ presenters: "ui/*/view" }],
+    },
+  ],
+  invalid: [
+    {
+      code: "async function go() { await a(); await b(); }",
+      filename: "/a/ui/pins/view.tsx",
+      options: [{ presenters: "ui/*/view" }],
+      errors: [{ messageId: "orchestration" }],
+    },
+  ],
+});
+
+console.log("→", "options: no-offset-pagination banned");
+tester.run("no-offset-pagination", rules["no-offset-pagination"], {
+  valid: [{ code: "const q = { offset: 1 };", options: [{ banned: ["page"] }] }],
+  invalid: [{ code: "const q = { page: 1 };", options: [{ banned: ["page"] }], errors: [{ messageId: "offset" }] }],
+});
+
+console.log("→", "options: no-status-literal setters");
+tester.run("no-status-literal", rules["no-status-literal"], {
+  valid: [{ code: "reply.status(404);", options: [{ setters: ["httpCode"] }] }],
+  invalid: [{ code: "reply.httpCode(404);", options: [{ setters: ["httpCode"] }], errors: [{ messageId: "literal" }] }],
+});
+
+console.log("every option asserted");
