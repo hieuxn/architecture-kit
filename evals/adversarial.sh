@@ -6,7 +6,15 @@ P="$1"; QC="$2"
 pass=0; fail=0
 cd "$P" || exit 1
 
-restore() { git -C "$P" checkout -q -- . 2>/dev/null; git -C "$P" clean -qfd -e node_modules -e qc.config.json -e docs 2>/dev/null; }
+# qc.config.json is excluded from the clean because a target may keep it untracked, so a case
+# that edits it cannot rely on git to put it back. Snapshot it instead.
+CFG_BAK=$(mktemp); cp "$P/qc.config.json" "$CFG_BAK" 2>/dev/null || true
+
+restore() {
+  git -C "$P" checkout -q -- . 2>/dev/null
+  git -C "$P" clean -qfd -e node_modules -e qc.config.json -e docs 2>/dev/null
+  [ -s "$CFG_BAK" ] && cp "$CFG_BAK" "$P/qc.config.json"
+}
 
 # A gate case: run `qc check`, require the named rule id in the output.
 gate() {
@@ -55,6 +63,12 @@ gate "the map naming a check that is gone" "unknown-check" \
   bash -c 'sed -i "s|qc/no-raw-fetch|qc/no-such-rule|" docs/enforcement.md'
 gate "a claimed requirement with no test" "unregistered-requirement" \
   bash -c 'sed -i "0,/req: \[/s//req: [\"REQ-ZZZ-999\", /" backend/src/features/pins/trigger.ts'
+gate "a constant disagreeing with its registry" "registry-disagreement" \
+  bash -c 'sed -i "s/  clientDefault: 600,/  clientDefault: 900,/" backend/src/application/ports/storage.ts'
+gate "an agreement left checking nothing" "unfound-constant" \
+  bash -c 'sed -i "s/export const PRESIGN_LIFETIME_SECONDS/export const RENAMED_LIFETIMES/" backend/src/application/ports/storage.ts'
+gate "a config whose feature roots match nothing" "unfound-root" \
+  bash -c 'echo "{\"featureRoots\": [\"nowhere/src/features\"]}" > qc.config.json'
 
 echo "--- rules ---"
 T=backend/src/features/pins/shared/queries.ts
