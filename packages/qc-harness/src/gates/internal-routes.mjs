@@ -1,6 +1,7 @@
 // A worker calls the api by building a path string. Nothing type-checks that
 // string against the route table, so renaming a route leaves the worker posting
-// into a 404 that looks, from the queue's side, like an outcome nobody recorded.
+// into a not-found response that looks, from the queue's side, like an outcome
+// nobody recorded.
 //
 // Both sides are read as text and matched shape by shape: a template segment in
 // the worker's url stands where a `:name` stands in the route. QC-007 — where a

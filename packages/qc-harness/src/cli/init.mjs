@@ -9,7 +9,9 @@ import { fileURLToPath } from "node:url";
 
 const templates = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../templates");
 
-// Copied into the repository root. `decisions.examples.md` stays in the package: a new
+// Copied into the repository root. `../decisions.examples.md` sits outside this list on
+// purpose: it cites ids the shipped register does not define, so a repository that took it
+// would fail the citations gate. A new
 // repository should not carry somebody else's domain decisions.
 const FILES = [
   ["qc.config.json", "qc.config.json"],

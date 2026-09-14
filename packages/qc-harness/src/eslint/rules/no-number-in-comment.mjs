@@ -17,7 +17,7 @@ const STANDARDS = [
   "RFC \\d+",
   "base64",
   "utf8",
-  "\\d_[a-z_]+",
+  "\\d+_[a-z0-9_]+",
 ];
 
 const DIGIT = /\d/;
