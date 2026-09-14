@@ -21,6 +21,7 @@ never portable, and renumbering would break every citation that already points h
 | ADR-0031 | State machines are a client concern | Durable server state is columns plus a transition table |
 | ADR-0046 | The database major is the current one | The registry is the pin; the minor comes from the cloud catalog at apply time |
 | ADR-0047 | Every feature is a pipeline of named blocks | One block, one file. An empty block is a review finding. Only `index` crosses a feature boundary |
+| ADR-0055 | Pagination is keyset, and its cursor is opaque | `offset` and `skip` are rejected. A total is a bounded count or a documented estimate, never an exact count by default. `docs/pagination.md` owns the query, the index and the exemption |
 | ADR-0054 | Bounded vertical slices with prescribed taxonomy | Operations are discrete vertical slices under `slices/`; `index`, `schema`, `trigger` at root. Disallowed subfolders fail review |
 
 ## Correctness
@@ -48,7 +49,7 @@ never portable, and renumbering would break every citation that already points h
 |---|---|---|
 | ADR-0038 | Client work is cancellable, off-thread and event-driven by construction | The cancellation token is the last parameter of every function that can outlive the interaction. A write is never cancelled by navigation |
 | ADR-0040 | Accessibility is WCAG 2.2 AA | Every drag has a non-drag equivalent. The focus ring is never removed |
-| ADR-0048 | Realtime is a socket carrying notifications, not data | A frame names a row; the client invalidates and refetches. Fan-out is in-process first, then the database notification channel |
+| ADR-0048 | Realtime is a sequenced stream, and a frame is applied only where the client holds the whole set | Every frame carries a sequence number and names a row. A client holding the complete set applies the frame as a delta; a client holding a window onto a set invalidates and refetches, because a new row has no placement in a page nobody has fetched. A gap in the sequence is closed by refetching, never by guessing. Fan-out is in-process first, then the database notification channel |
 
 ## Process
 

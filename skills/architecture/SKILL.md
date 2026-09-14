@@ -17,6 +17,7 @@ there. If a doc this skill names does not exist, the repository has not run `qc 
 | Parity, realtime, presenters | `docs/ui.md` |
 | Rule-to-check map, comment rules | `docs/enforcement.md` |
 | Budgets | `docs/performance.md` |
+| Keyset, cursors, counting | `docs/pagination.md` |
 | Domain terms | `docs/glossary.md` |
 
 ## The shape

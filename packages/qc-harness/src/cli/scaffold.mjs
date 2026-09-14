@@ -88,6 +88,16 @@ export async function create${pascal}() {
   throw new Error("not implemented");
 }
 `,
+    // The gate wants a workflow proven to run without a view, and the generator is the
+    // cheapest place to make that true. Replace the shape assertion with real cases.
+    "slices/create.test.ts": `import test from "node:test";
+import assert from "node:assert/strict";
+import { create${pascal}Pipeline } from "./create.js";
+
+test("the create pipeline is declared headlessly", () => {
+  assert.equal(create${pascal}Pipeline.name, "create-${name}");
+});
+`,
   };
 }
 
@@ -129,6 +139,14 @@ export const ${camel}Table = ${tenant.tableFactory}("${snake}", {
 
 export const ${upper}_COLUMNS = \`id, ${tenant.sqlColumn} as "${tenant.column}", created_at as "createdAt"\`;
 `,
+    "pipeline.test.ts": `import test from "node:test";
+import assert from "node:assert/strict";
+import { ${camel}Pipeline } from "./pipeline.js";
+
+test("the pipeline is declared headlessly", () => {
+  assert.equal(${camel}Pipeline.name, "${name}");
+});
+`,
   };
 }
 
@@ -148,6 +166,16 @@ export async function runScaffold(config, args = []) {
 
   if (existsSync(dir)) {
     console.error(`${path.relative(config.root, dir)} already exists.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // The generator cannot emit what the anatomy gate will reject: the wrong thing has to
+  // stay the expensive one. docs/enforcement.md.
+  const sliceOnly = config.anatomy?.sliceOnlyRoots ?? ["backend/src/features"];
+  if (flat && sliceOnly.some((only) => root.includes(only))) {
+    console.error(`${root} is bounded-vertical-slice only, so --flat would fail the anatomy gate.`);
+    console.error("Drop --flat, scaffold elsewhere with --root, or take this root out of anatomy.sliceOnlyRoots.");
     process.exitCode = 1;
     return;
   }

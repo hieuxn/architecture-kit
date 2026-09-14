@@ -14,6 +14,7 @@ undefined id, a missing doc path, or a reference to another repository fails the
 | `docs/ui.md` | Parity, realtime, presenters |
 | `docs/enforcement.md` | Every rule beside the check that enforces it |
 | `docs/performance.md` | Budgets. The one home for these numbers |
+| `docs/pagination.md` | Keyset, cursors, counting, and the one exemption |
 | `docs/glossary.md` | Domain terms |
 | `STATE.md` | What is true now |
 

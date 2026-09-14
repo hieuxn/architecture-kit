@@ -20,6 +20,7 @@ const FILES = [
   ["docs/enforcement.md", "docs/enforcement.md"],
   ["docs/guards.md", "docs/guards.md"],
   ["docs/performance.md", "docs/performance.md"],
+  ["docs/pagination.md", "docs/pagination.md"],
   ["docs/glossary.md", "docs/glossary.md"],
   ["docs/ui.md", "docs/ui.md"],
   ["githooks/pre-commit", ".githooks/pre-commit"],

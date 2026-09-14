@@ -108,3 +108,34 @@ the same expression, or the rule cries wolf and someone disables it.
 
 Banning a cache or search server would manufacture a decision a new repository has not made. A gate
 enforces a decision that exists; it does not create one.
+
+
+## ADR-0048 amended, ADR-0055 added, docs/pagination.md shipped
+
+ADR-0048 was "a socket carrying notifications, not data". It now reads as a **sequenced stream**:
+every frame carries a sequence number and names a row; a client holding the complete set applies
+it as a delta, a client holding a *window* onto a set invalidates and refetches, and a gap is
+closed by refetching rather than guessing.
+
+The line is not list-versus-detail. It is **complete set versus window** — a new row has no
+placement in a page nobody has fetched, which is why paginated lists resist deltas no matter how
+small the payload.
+
+ADR-0055 carries pagination, and `docs/pagination.md` owns the query, the index, the cursor, the
+count and the one exemption. Both public standards back the opaque cursor: Relay says a cursor
+"should be considered opaque by the client"; AIP-158 says page tokens **must** be opaque and
+**must not** be user-parseable, and that base-64 alone is insufficient. AIP-158 also permits a
+`total_size` that "may be an estimate" if documented as one, which is where the bounded count and
+the documented estimate come from.
+
+## Two places the generator was fighting the gates
+
+Both found by running `qc init` then `qc feature` then `qc check` on an empty directory — which is
+the CI smoke test, and the reason it exists.
+
+- `qc feature` emitted a saga with no test, so scaffolded code failed `saga-tests` immediately. It
+  now emits a headless test beside the slice.
+- `qc feature --flat` wrote into a root the default config marks slice-only, so the output failed
+  `eight-blocks`. It now refuses and says which of the three fixes applies.
+
+The right thing has to be the cheapest thing; a generator that emits rejected code inverts that.

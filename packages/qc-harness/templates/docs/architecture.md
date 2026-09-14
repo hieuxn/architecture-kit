@@ -111,7 +111,8 @@ below it constructs a dependency for itself.
   test asserting zero cross-reads. A repository without that test fails review. The predicate is also
   checked structurally, across every feature at once — a statement on a business table that names no
   tenant fails the build, including the one nobody wrote a test for.
-- Keyset pagination only. `offset` and `skip` are rejected.
+- Keyset pagination only, with an opaque cursor — ADR-0055. `docs/pagination.md` owns the query,
+  the index, counting, and the one exemption.
 - Migrations are generated, reviewed like code, never edited after merge, expand/contract only, and
   run as a one-off task before the service update — never on boot. The ledger holds each file's
   checksum, so an edited file fails the task instead of drifting.
@@ -159,6 +160,17 @@ Every multi-step or business workflow is designed headless-first:
   fragile browser automation.
 - Browser automation is confined to smoke checks: visual token application, input-method composition
   guards, and canvas mount.
+
+## Realtime — ADR-0048
+
+The stream is sequenced. Every frame carries a sequence number and names a row.
+
+- A client holding the **complete set** applies the frame as a delta.
+- A client holding a **window** onto a set — anything paginated — invalidates and refetches,
+  because a new row has no placement in a page nobody has fetched.
+- A gap in the sequence is closed by refetching, never by guessing.
+- Authorization is per subscriber: a frame carrying data must be filtered for the connection
+  that receives it, which the refetch path gets for free by going through the normal read.
 
 ## Shared packages
 
