@@ -55,3 +55,20 @@ step through `QC_STOP_EXTRA` in `.claude/settings.json`.
   clones it. The plugin half needs no such step — it installs from this repo directly.
 - No git remote yet. `.github/workflows/ci.yml` runs the suite and a from-nothing smoke test
   (`qc init` → `qc feature` → `qc check`) once one exists.
+
+
+## Gate 12 — saga-tests
+
+Added after the extraction. The two headless rules keep orchestration out of the view and the view
+out of the pipeline; neither proves a workflow is ever *run* without one. This asserts every
+declared saga is named by a test that imports no view module.
+
+Its first version demanded the pipeline constant's own name and reported 42 of 42 sagas untested in
+`quality-control-mono` — a false alarm. Those workflows are called through `run*` helpers that wrap
+the pipeline, so the gate now follows that one indirection, the way `tenant-predicate` already
+follows a named insert factory. The honest number is **6 of 42**, all in `rebar`.
+
+A CLI gate was considered and rejected: asserting an entrypoint file exists passes on day one and
+never fails again. When a CLI dispatcher exists, the gate worth writing is agreement between its
+dispatch table and the set of declared sagas — the shape `public-routes` and `internal-routes`
+already use.

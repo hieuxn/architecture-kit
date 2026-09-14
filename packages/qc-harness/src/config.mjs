@@ -87,6 +87,15 @@ export const defaults = {
   // Files that may only present, never orchestrate.
   presenters: "frontend/src/features/*/trigger",
 
+  // A workflow is headless-first: declared by one of these, and proven by a test that
+  // imports none of the view modules. docs/architecture.md.
+  saga: {
+    factories: ["definePipeline", "defineSaga"],
+    viewModules: ["react", "react-dom"],
+    // The block that must stay callable without a view layer.
+    headlessBlock: "pipeline",
+  },
+
   // Names that must be registered scoped, never singleton.
   scopedSuffixes: ["Repository", "Saga", "UnitOfWork", "UnitOfWorkFactory"],
 
@@ -117,6 +126,7 @@ export const defaults = {
     "public-routes": true,
     "internal-routes": true,
     "headless-sagas": true,
+    "saga-tests": true,
   },
 
   // Gates that produce rather than inspect: a repository's codegen imports these and

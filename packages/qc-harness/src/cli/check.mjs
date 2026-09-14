@@ -17,9 +17,12 @@ import { checkClaimedRequirements } from "../gates/claimed-requirements.mjs";
 import { allowedPublicRoutes, checkPublicRoutes, declaredPublicRoutes } from "../gates/public-routes.mjs";
 import { calledInternalRoutes, checkInternalRoutes, declaredInternalRoutes } from "../gates/internal-routes.mjs";
 import { checkHeadlessPipelines } from "../gates/headless-sagas.mjs";
+import { checkSagaTests, declaredSagas } from "../gates/saga-tests.mjs";
 import { enabled } from "../config.mjs";
 
 const SKIP = /node_modules|\/dist\/|\.test\.[cm]?[jt]sx?$/;
+const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
+const SOURCE_EXTENSION = /\.tsx?$/;
 const CITABLE_EXTENSION = /\.(tsx?|mjs|md)$/;
 
 const read = (file) => readFile(file, "utf8").catch(() => null);
@@ -86,6 +89,24 @@ async function citableFiles(roots, root) {
     }
   }
   for (const root of roots) await walk(root);
+  return files;
+}
+
+/** Every source file under the citable roots, tests included. */
+async function sourceFiles(config) {
+  const rel = relativeTo(config.root);
+  const files = [];
+  async function walk(dir) {
+    for (const entry of await list(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (/node_modules|\/dist\//.test(full)) continue;
+      if (entry.isDirectory()) await walk(full);
+      else if (SOURCE_EXTENSION.test(entry.name)) {
+        files.push({ path: rel(full), contents: await readFile(full, "utf8") });
+      }
+    }
+  }
+  for (const root of config.paths.citable) await walk(path.join(config.root, root));
   return files;
 }
 
@@ -266,7 +287,7 @@ export async function runCheck(config, only) {
     problems.push(...checkFeatureAnatomy(relative, config.anatomy), ...checkNoEmptyBlock(contents, config.anatomy));
   }
   if (enabled(config.gates, "headless-sagas")) {
-    problems.push(...checkHeadlessPipelines(contents));
+    problems.push(...checkHeadlessPipelines(contents, { block: config.saga.headlessBlock, viewModules: config.saga.viewModules }));
   }
   lines.push(`OK  structure    ${features.length} feature folder(s)`);
 
@@ -303,6 +324,21 @@ export async function runCheck(config, only) {
     lines.push("OK  sql          every column is declared, every statement and shared insert carries the tenant");
     // An exemption is counted and named, so it stays a decision rather than a habit.
     for (const exemption of taken) lines.push(`  exempt       ${exemption.path}: ${exemption.reason}`);
+  }
+
+  if (enabled(config.gates, "saga-tests")) {
+    const sources = await sourceFiles(config);
+    const sagas = declaredSagas(
+      sources.filter((file) => !TEST_FILE.test(file.path)),
+      { factories: config.saga.factories },
+    );
+    problems.push(
+      ...checkSagaTests(sagas, sources.filter((file) => TEST_FILE.test(file.path)), {
+        viewModules: config.saga.viewModules,
+        sources,
+      }),
+    );
+    lines.push(`OK  sagas        ${sagas.length} workflow(s), each named by a test that runs without a view`);
   }
 
   const routes = await triggers(config);

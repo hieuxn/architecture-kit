@@ -33,6 +33,7 @@ turn off what this repository does not have. A gate whose input path does not ex
 | Cross-file duplication | `jscpd`, threshold from `quality-thresholds.json` |
 | UI triggers are thin presenters | `qc/no-orchestration-in-trigger` |
 | Pipelines remain pure and headless | `qc check` (headless-sagas) |
+| Every workflow runs without a view | `qc check` (saga-tests). A saga must be named by a test that imports no view module; a runner that calls it counts |
 | Feature anatomy | `qc check` (eight-blocks) |
 | Cited ids and doc paths resolve | `qc check` (citations) |
 | No reference to another repository | `qc check` (citations, `foreign`) |
