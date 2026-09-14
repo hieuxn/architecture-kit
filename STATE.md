@@ -23,9 +23,22 @@ The kit does not name a vendor or this repository's history.
 `checkSelfContained(files, foreign)` now takes the foreign-name list; it hardcoded this
 repository's predecessor. A repo naming none has nothing to fail.
 
+- **P4a** `qc check` — the I/O layer, every path from config. `src/config.test.mjs` asserts the
+  switch maps and the real rule and gate names agree, so the next rename cannot silently
+  disable a check.
+
+## Acceptance, already passing
+
+`qc check` run against `quality-control-mono` reproduces that repo's own `scripts/check.mjs`
+output exactly: 30 feature folders, the same two tenant-predicate exemptions, green. The only
+diff is two deliberate wordings (`bff` → `edge`, and a dropped `QC-010` in a line the kit cannot
+cite). The single-file fast path the post-edit hook calls works, and pointing `tenant.sqlColumn`
+at a name the repo does not use turns the run red — so it is reading, not just passing.
+
 ## Next
 
-**P4** the CLI, **P5** templates, **P6** the plugin half, **P7** rewire `quality-control-mono`.
+**P4b** `qc init` / `qc feature` / `qc install-hooks`, **P5** templates, **P6** the plugin,
+**P7** rewire `quality-control-mono` onto the kit.
 
 ## Watch
 

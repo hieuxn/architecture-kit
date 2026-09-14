@@ -30,6 +30,42 @@ export const defaults = {
 
   thresholds: "quality-thresholds.json",
 
+  // Everything the I/O layer reads. A gate is pure; these say where its input lives.
+  // A path that does not exist disables the check that reads it, rather than failing:
+  // a repository without workers has no worker routes to disagree about.
+  paths: {
+    // The feature root the server-side gates read: schema, routes, SQL.
+    serverFeatures: "backend/src/features",
+    migrations: "backend/src/drizzle",
+    // Requirement id to the tests that prove it.
+    traceability: "traceability/requirements.json",
+    // The edge that forwards to the api, holding the set it forwards without a session.
+    publicRoutes: "bff/src/public-routes.ts",
+    // Each worker's entrypoint, relative to its own folder.
+    workers: "workers",
+    workerEntry: "src/entry.ts",
+    // Query shapes shared across features: statements that own no table and answer
+    // to no migration, so they join the tenant scan only.
+    sharedSql: "backend/src/application/sql/crud.ts",
+    // Roots walked for citations, doc paths and foreign references.
+    citable: ["backend/src", "frontend/src", "bff/src", "packages", "workers", "docs", "migration"],
+    // Files inside a feature that carry SQL.
+    resourceFiles: ["resource.ts", "schema.ts"],
+    resourceDirs: ["shared", "slices"],
+    triggerFile: "trigger.ts",
+  },
+
+  // Where a tool demands a literal the registry already owns, assert agreement rather
+  // than forbid the number. QC-007. Each entry names both sides.
+  agreements: [],
+
+  // Names that may appear in a comment but are owned elsewhere.
+  foreign: [],
+
+  // What a scaffolded feature imports its runtime from. A new repository points this
+  // at its own kernel; the kit emits the shape, never a dependency on the kit.
+  kernelModule: "@qc/kernel",
+
   tenant: {
     column: "tenantId",
     sqlColumn: "tenant_id",
@@ -91,7 +127,7 @@ export const defaults = {
     "no-orchestration-in-trigger": true,
     "no-status-literal": true,
     "scoped-repository": true,
-    "drizzle-only-in-resource": true,
+    "storage-only-in-resource": true,
     "tenant-scoped-table": true,
     "signal-last-param": true,
     "no-raw-fetch": true,
