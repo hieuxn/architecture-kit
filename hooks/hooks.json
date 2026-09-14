@@ -1,0 +1,20 @@
+{
+  "description": "Architecture gates: a fast per-file pass after every edit, and a full pass that refuses to end a red turn. Both no-op in a repository with no qc.config.json.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-edit-gate.sh\"", "timeout": 60 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/stop-gate.sh\"", "timeout": 600 }
+        ]
+      }
+    ]
+  }
+}
