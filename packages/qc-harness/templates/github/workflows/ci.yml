@@ -10,9 +10,12 @@ jobs:
         with: { node-version-file: package.json }
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - run: pnpm gate:test
-      - run: pnpm spec:check
-      - run: pnpm dup:check
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm test
+
+      # The structural gates. This step needs no package script of its own.
+      - run: npx qc check
+
+      # Uncomment each as the repository grows the thing it checks.
+      # - run: pnpm typecheck
+      # - run: pnpm lint
+      # - run: pnpm dup:check
+      # - run: pnpm test

@@ -3,8 +3,10 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.18.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "test": "pnpm --filter @shawry/qc-harness test"
+    "test": "pnpm --filter architecture-harness test"
   }
 }

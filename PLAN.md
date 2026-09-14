@@ -2,14 +2,14 @@
 
 Extract the agent harness + architecture of `quality-control-mono` into a reusable kit.
 
-Source repo: `~/Documents/GitHub/quality-control-mono` (branch `chore/local-env-single-file`).
+Source repo: `quality-control-mono` (branch `chore/local-env-single-file`).
 
 ## Two artifacts, one repo
 
 | Artifact | Installs how | Holds |
 |---|---|---|
 | Claude Code plugin `architecture` | `claude plugin install` | hooks wiring, skills (rules), slash commands |
-| npm package `@shawry/qc-harness` | `pnpm add -D` | gates, eslint rules, CLI, doc templates |
+| npm package `architecture-harness` | `pnpm add -D` | gates, eslint rules, CLI, doc templates |
 
 The plugin's hooks shell out to the package's CLI. They cannot merge: different install mechanisms.
 

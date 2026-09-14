@@ -106,19 +106,23 @@ export const defaults = {
   },
 
   // Every gate and lint rule is switchable. Ship all; a repo turns off what it lacks.
+  // These are the gates `qc check` runs, and a switch here really does turn one off.
   gates: {
     "eight-blocks": true,
     citations: true,
     "registry-agreement": true,
     "sql-identifiers": true,
     "tenant-predicate": true,
-    "tenant-tables": true,
     "claimed-requirements": true,
     "public-routes": true,
     "internal-routes": true,
-    "contract-compose": true,
     "headless-sagas": true,
   },
+
+  // Gates that produce rather than inspect: a repository's codegen imports these and
+  // writes their output. `qc check` does not run them, so they carry no switch — a
+  // switch that changed nothing would be a lie about what the config controls.
+  generators: ["tenant-tables", "contract-compose"],
 
   rules: {
     "no-number-in-comment": true,

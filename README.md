@@ -7,7 +7,7 @@ Two artifacts live here. They install differently and cannot merge.
 | Artifact | Install | Holds |
 |---|---|---|
 | Claude Code plugin `architecture` | `claude plugin install` | hooks, skills, slash commands |
-| npm package `@shawry/qc-harness` | `pnpm add -D` | gates, lint rules, the `qc` CLI, doc templates |
+| npm package `architecture-harness` | `pnpm add -D` | gates, lint rules, the `qc` CLI, doc templates |
 
 The plugin's hooks call the package's CLI. Either half works without the other: the package is a
 normal dev dependency, and the plugin's hooks no-op in any repository with no `qc.config.json`.
@@ -15,7 +15,7 @@ normal dev dependency, and the plugin's hooks no-op in any repository with no `q
 ## Start a new repository
 
 ```bash
-pnpm add -D @shawry/qc-harness
+pnpm add -D architecture-harness
 npx qc init            # decisions, architecture and enforcement docs, config, git hook, CI
 npx qc install-hooks
 npx qc feature orders  # scaffold a feature in the right anatomy
@@ -28,7 +28,7 @@ first gate fails on every source file in the repository.
 Then install the plugin so an agent is held to the same rules a human is:
 
 ```bash
-claude plugin marketplace add shawrylk/architecture-kit
+claude plugin marketplace add <your-org>/architecture-kit
 claude plugin install architecture
 ```
 
@@ -60,7 +60,7 @@ qc config         the configuration in force, after defaults merge
 Lint is a preset, so a consumer's `eslint.config.mjs` is an import rather than a copy:
 
 ```js
-import { preset } from "@shawry/qc-harness/preset";
+import { preset } from "architecture-harness/preset";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
 import boundaries from "eslint-plugin-boundaries";

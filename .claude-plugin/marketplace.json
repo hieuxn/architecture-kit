@@ -1,13 +1,14 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "shawry-architecture",
+  "name": "architecture-kit",
   "description": "The architecture kit: decisions, gates, lint rules and agent harness for bounded vertical slices",
-  "owner": { "name": "shawrylk" },
+  "owner": {
+    "name": "architecture-kit"
+  },
   "plugins": [
     {
       "name": "architecture",
       "description": "Bounded vertical slice architecture: the decision register, the gates that enforce it, and the hooks that hold an agent to it",
-      "author": { "name": "shawrylk" },
       "category": "workflow",
       "source": "./"
     }

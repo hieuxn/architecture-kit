@@ -33,6 +33,25 @@ async function copyTemplate(from, to, force) {
   return { to, status: existsSync(to) && force ? "overwritten" : "written" };
 }
 
+const SCRIPTS = {
+  "spec:check": "qc check",
+  "gen:feature": "qc feature",
+  prepare: "qc install-hooks",
+};
+
+/** Add the scripts the docs reference, without touching one the repository already set. */
+async function addScripts(config) {
+  const file = path.join(config.root, "package.json");
+  if (!existsSync(file)) return [];
+  const manifest = JSON.parse(await readFile(file, "utf8"));
+  const scripts = manifest.scripts ?? {};
+  const added = Object.entries(SCRIPTS).filter(([name]) => scripts[name] === undefined);
+  if (added.length === 0) return [{ to: file, status: "kept" }];
+  manifest.scripts = { ...scripts, ...Object.fromEntries(added) };
+  await writeFile(file, `${JSON.stringify(manifest, null, 2)}\n`);
+  return [{ to: file, status: "written" }];
+}
+
 export async function runInit(config, args = []) {
   const force = args.includes("--force");
   const results = [];
@@ -42,6 +61,10 @@ export async function runInit(config, args = []) {
 
   const hook = path.join(config.root, ".githooks/pre-commit");
   if (existsSync(hook)) await writeFile(hook, await readFile(hook, "utf8"), { mode: 0o755 });
+
+  // The docs and the CI workflow both tell a reader to run these, so `init` puts them
+  // where a reader will look rather than leaving the instruction dangling.
+  results.push(...(await addScripts(config)));
 
   for (const { to, status } of results) {
     console.log(`${status.padEnd(11)} ${path.relative(config.root, to)}`);

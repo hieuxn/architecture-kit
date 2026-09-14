@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaults, load, merge } from "./config.mjs";
@@ -14,12 +15,31 @@ test("every lint rule has a switch, and every switch names a rule", () => {
   assert.deepEqual(Object.keys(defaults.rules).sort(), Object.keys(rules).sort());
 });
 
-test("every gate has a switch, and every switch names a gate", () => {
+test("every gate is either switchable or declared a generator", () => {
   const files = readdirSync(path.join(here, "gates"))
     .filter((file) => file.endsWith(".mjs") && !file.endsWith(".test.mjs"))
     .map((file) => file.replace(/\.mjs$/, ""))
     .sort();
-  assert.deepEqual(Object.keys(defaults.gates).sort(), files);
+  const accounted = [...Object.keys(defaults.gates), ...defaults.generators].sort();
+  assert.deepEqual(accounted, files);
+});
+
+// A switch that turns nothing off is worse than no switch: it says the config
+// controls something it does not. Every name under `gates` must reach the runner.
+test("every switch under gates is one the check runner reads", async () => {
+  const source = await readFile(path.join(here, "cli/check.mjs"), "utf8");
+  for (const gate of Object.keys(defaults.gates)) {
+    assert.ok(
+      source.includes(`"${gate}"`),
+      `gates.${gate} is never consulted by the check runner`,
+    );
+  }
+});
+
+test("a generator is not offered as a switch", () => {
+  for (const generator of defaults.generators) {
+    assert.equal(defaults.gates[generator], undefined);
+  }
 });
 
 test("a user config overrides a key without dropping its siblings", () => {

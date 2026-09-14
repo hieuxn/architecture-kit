@@ -107,7 +107,25 @@ async function agreements(config) {
     const registryFile = await read(path.join(config.root, entry.registry));
     if (source === null || registryFile === null) continue;
     const registry = JSON.parse(registryFile)[entry.registryKey];
+    if (!registry) {
+      problems.push({
+        path: entry.registry,
+        rule: "unknown-registry-key",
+        detail: `'${entry.registryKey}' is not a key of ${entry.registry}`,
+      });
+      continue;
+    }
     const declared = declaredValues(source, entry.constant);
+    // A constant this config named but the source does not hold means the agreement is
+    // checking nothing. Silence there is how a gate stops meaning anything.
+    if (Object.keys(declared).length === 0) {
+      problems.push({
+        path: entry.source,
+        rule: "unfound-constant",
+        detail: `'${entry.constant}' declares no values here — the agreement checks nothing`,
+      });
+      continue;
+    }
     const toKey = (key) => `${entry.prefix ?? ""}${entry.lowercase === false ? key : key.toLowerCase()}`;
     problems.push(...checkAgreement(declared, registry, toKey, entry.source));
   }

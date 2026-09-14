@@ -39,7 +39,7 @@ predecessor.
 ## Open
 
 - **The dependency is a local file link.** `quality-control-mono` has
-  `"@shawry/qc-harness": "file:../architecture-kit/packages/qc-harness"`, which only resolves on a
+  `"architecture-harness": "file:../architecture-kit/packages/qc-harness"`, which only resolves on a
   machine with both checkouts side by side. Publish, or point at the git URL, before anyone else
   clones it.
 - The kit repository has no remote and no CI of its own yet.
