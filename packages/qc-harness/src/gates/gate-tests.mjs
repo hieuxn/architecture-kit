@@ -25,8 +25,13 @@ export function checkGatesAreTested(checks, tests) {
   for (const { path, contents } of checks) {
     const stem = stemOf(path);
     const exported = [...contents.matchAll(/export\s+(?:async\s+)?(?:function|const)\s+(\w+)/g)].map((m) => m[1]);
-    const names = [stem, ...exported];
-    const named = new RegExp(`\\b(?:${names.map(escape).join("|")})\\b`);
+    // The stem counts only where a test imports the file. A bare word matches English:
+    // a gate called `nothing` read as proven because a test said "yields nothing".
+    const imported = new RegExp(`${escape(stem)}\\.[cm]?[jt]sx?`);
+    const named =
+      exported.length > 0
+        ? new RegExp(`${imported.source}|\\b(?:${exported.map(escape).join("|")})\\b`)
+        : imported;
     if (!tests.some((test) => named.test(test.contents))) {
       problems.push({
         path,
