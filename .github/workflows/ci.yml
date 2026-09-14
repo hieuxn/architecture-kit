@@ -1,0 +1,27 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22 }
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
+      # Every rule, every gate, every config knob — each with a case that must fail.
+      - run: pnpm test
+
+      # The kit must still be able to set up a repository from nothing.
+      - name: a fresh repository reaches a green check
+        run: |
+          set -euo pipefail
+          workdir=$(mktemp -d)
+          cd "$workdir"
+          git init -q
+          echo '{"name":"smoke","private":true,"type":"module"}' > package.json
+          node "$GITHUB_WORKSPACE/packages/qc-harness/src/cli/qc.mjs" init
+          node "$GITHUB_WORKSPACE/packages/qc-harness/src/cli/qc.mjs" feature orders
+          node "$GITHUB_WORKSPACE/packages/qc-harness/src/cli/qc.mjs" check

@@ -36,10 +36,22 @@ Both halves are built, and `quality-control-mono` now runs on them.
 `checkSelfContained(files, foreign)` takes the foreign-name list; it hardcoded one repository's
 predecessor.
 
+## Installed and verified
+
+`claude plugin marketplace add <this repo>` then `claude plugin install architecture` works.
+The inventory loads as 7 skills and 2 hooks, ~479 tokens always-on. Verified against a real
+repository: the stop gate runs and reports, the post-edit gate passes a clean file, and both
+no-op where there is no `qc.config.json`. The installed plugin carries the package, so the
+hooks' `${CLAUDE_PLUGIN_ROOT}/packages/qc-harness/src/cli/qc.mjs` path resolves.
+
+A consuming repository therefore keeps no hook scripts of its own. It adds its own extra stop
+step through `QC_STOP_EXTRA` in `.claude/settings.json`.
+
 ## Open
 
 - **The dependency is a local file link.** `quality-control-mono` has
   `"architecture-harness": "file:../architecture-kit/packages/qc-harness"`, which only resolves on a
   machine with both checkouts side by side. Publish, or point at the git URL, before anyone else
-  clones it.
-- The kit repository has no remote and no CI of its own yet.
+  clones it. The plugin half needs no such step — it installs from this repo directly.
+- No git remote yet. `.github/workflows/ci.yml` runs the suite and a from-nothing smoke test
+  (`qc init` → `qc feature` → `qc check`) once one exists.
