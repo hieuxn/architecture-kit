@@ -30,6 +30,18 @@ export const defaults = {
 
   thresholds: "quality-thresholds.json",
 
+  // A key that makes a retry a resume rather than a second write. docs/guards.md.
+  idempotency: {
+    keys: ["mutationId", "clientMutationId", "idempotencyKey"],
+    volatile: ["Date.now", "Math.random", "crypto.randomUUID", "uuid", "uuidv4", "nanoid", "randomUUID"],
+    // A store that outlives nothing has nothing to dedupe, so a disposable key is right.
+    ledgerKey: "ledger",
+    throwawayLedgers: ["InMemoryPipelineLedger"],
+  },
+
+  // The log that is evidence only while nothing can edit it.
+  audit: { table: "audit_log" },
+
   // Everything the I/O layer reads. A gate is pure; these say where its input lives.
   // A path that does not exist disables the check that reads it, rather than failing:
   // a repository without workers has no worker routes to disagree about.
@@ -53,6 +65,8 @@ export const defaults = {
     resourceFiles: ["resource.ts", "schema.ts"],
     resourceDirs: ["shared", "slices"],
     triggerFile: "trigger.ts",
+    // A repository's own gates. The kit's are proven by its suite; these are not.
+    checks: "scripts/gate",
   },
 
   // Where a tool demands a literal the registry already owns, assert agreement rather
@@ -127,6 +141,9 @@ export const defaults = {
     "internal-routes": true,
     "headless-sagas": true,
     "saga-tests": true,
+    "gate-tests": true,
+    "audit-append-only": true,
+    "enforcement-map": true,
   },
 
   // Gates that produce rather than inspect: a repository's codegen imports these and
@@ -145,6 +162,8 @@ export const defaults = {
     "tenant-scoped-table": true,
     "signal-last-param": true,
     "no-raw-fetch": true,
+    "durable-idempotency-key": true,
+    "no-supersession-trail": true,
   },
 
   // Layer names and their legal import direction. The kit ships the reference set;

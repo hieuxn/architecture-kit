@@ -37,8 +37,8 @@ turn off what this repository does not have. A gate whose input path does not ex
 | Feature anatomy | `qc check` (eight-blocks) |
 | Cited ids and doc paths resolve | `qc check` (citations) |
 | No reference to another repository | `qc check` (citations, `foreign`) |
-| Every tenant-scoped table has a policy | `qc check` (tenant-tables), generated into the policy file |
-| Two features cannot claim one path or schema | `qc check` (contract-compose) |
+| Every tenant-scoped table has a policy | codegen, from the `tenant-tables` generator |
+| Two features cannot claim one path or schema | codegen, from the `contract-compose` generator |
 | A generated registry is current | your codegen's `--check` |
 | A query names a column a migration declares | `qc check` (sql-identifiers) |
 | A feature's SQL reads only its own tables | `qc check` (sql-identifiers) — the import rule cannot see a table name |
@@ -46,6 +46,12 @@ turn off what this repository does not have. A gate whose input path does not ex
 | The edge opens exactly the routes the api serves without a session | `qc check` (public-routes) |
 | Every path a worker posts to is a route the api serves | `qc check` (internal-routes) |
 | A claimed requirement names a test | `qc check` (claimed-requirements) |
+| An idempotency key is a durable id | `qc/durable-idempotency-key` |
+| No supersession trail | `qc/no-supersession-trail` |
+| A repository's own gates are tested | `qc check` (gate-tests) |
+| The audit log is append-only | `qc check` (audit-append-only) |
+| A value written twice agrees with its registry | `qc check` (registry-agreement) |
+| Every rule names a check, and every check is named | `qc check` (enforcement-map) |
 
 ## File length
 

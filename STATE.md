@@ -72,3 +72,39 @@ A CLI gate was considered and rejected: asserting an entrypoint file exists pass
 never fails again. When a CLI dispatcher exists, the gate worth writing is agreement between its
 dispatch table and the set of declared sagas — the shape `public-routes` and `internal-routes`
 already use.
+
+
+## Gates 13–15 and rules 11–12
+
+Derived by applying QC-007 to the kit itself: which decisions it ships had no check.
+
+| Check | Enforces |
+|---|---|
+| `gate-tests` | a repository's own gates each ship a case that must fail |
+| `audit-append-only` | no update, delete or truncate names the audit table |
+| `enforcement-map` | every check the kit runs is named in the map, and every name in the map resolves |
+| `qc/no-supersession-trail` | no deprecation note or "what this replaces" in a comment |
+| `qc/durable-idempotency-key` | an idempotency key is not minted inline where a retry cannot reuse it |
+
+`enforcement-map` found real staleness on its first run, including two rows written during the
+extraction claiming `qc check` runs `contract-compose` and `tenant-tables` — both generators, not
+gates. That is the bug class it exists for.
+
+### durable-idempotency-key took three attempts
+
+1. **Ban minting.** 44 findings. Wrong: the client is *supposed* to mint one per operation, and a
+   correct persisted queue was flagged.
+2. **Ban minting inline in a call argument** — a value built there cannot be re-sent. 42 findings,
+   dominated by one backend idiom.
+3. **Exempt a throwaway dedupe store.** `ledger: new InMemoryPipelineLedger()` in the same object
+   says the key is disposable by design, because nothing will ever recognise a repeat. 20 findings,
+   all frontend, all the same real shape: an id minted inside a click handler's call argument, so a
+   failed save retried by the user writes a second row.
+
+The lesson is the one `tenant-predicate` already carries: the exemption has to be local evidence in
+the same expression, or the rule cries wolf and someone disables it.
+
+### Not built: a no-second-datastore rule
+
+Banning a cache or search server would manufacture a decision a new repository has not made. A gate
+enforces a decision that exists; it does not create one.

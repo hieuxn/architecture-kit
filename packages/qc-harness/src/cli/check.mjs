@@ -18,11 +18,15 @@ import { allowedPublicRoutes, checkPublicRoutes, declaredPublicRoutes } from "..
 import { calledInternalRoutes, checkInternalRoutes, declaredInternalRoutes } from "../gates/internal-routes.mjs";
 import { checkHeadlessPipelines } from "../gates/headless-sagas.mjs";
 import { checkSagaTests, declaredSagas } from "../gates/saga-tests.mjs";
+import { checkGatesAreTested } from "../gates/gate-tests.mjs";
+import { checkAuditAppendOnly } from "../gates/audit-append-only.mjs";
+import { checkEnforcementMap } from "../gates/enforcement-map.mjs";
+import { rules as lintRules } from "../eslint/index.mjs";
 import { enabled } from "../config.mjs";
 
 const SKIP = /node_modules|\/dist\/|\.test\.[cm]?[jt]sx?$/;
 const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
-const SOURCE_EXTENSION = /\.tsx?$/;
+const SOURCE_EXTENSION = /\.([cm]?[jt]sx?)$/;
 const CITABLE_EXTENSION = /\.(tsx?|mjs|md)$/;
 
 const read = (file) => readFile(file, "utf8").catch(() => null);
@@ -93,8 +97,9 @@ async function citableFiles(roots, root) {
 }
 
 /** Every source file under the citable roots, tests included. */
-async function sourceFiles(config) {
+async function sourceFiles(config, only) {
   const rel = relativeTo(config.root);
+  const roots = only === undefined ? config.paths.citable : [only];
   const files = [];
   async function walk(dir) {
     for (const entry of await list(dir, { withFileTypes: true })) {
@@ -106,7 +111,7 @@ async function sourceFiles(config) {
       }
     }
   }
-  for (const root of config.paths.citable) await walk(path.join(config.root, root));
+  for (const root of roots) await walk(path.join(config.root, root));
   return files;
 }
 
@@ -203,6 +208,9 @@ async function sqlAgreement(config, taken) {
 
   const tenantOptions = { column: config.tenant.sqlColumn };
   const problems = [];
+  if (enabled(config.gates, "audit-append-only")) {
+    problems.push(...checkAuditAppendOnly(scoped, { table: config.audit.table }));
+  }
   if (enabled(config.gates, "sql-identifiers")) {
     problems.push(...checkSqlIdentifiers(tables, resources, tableOwners(migrations, features)));
   }
@@ -339,6 +347,31 @@ export async function runCheck(config, only) {
       }),
     );
     lines.push(`OK  sagas        ${sagas.length} workflow(s), each named by a test that runs without a view`);
+  }
+
+  if (enabled(config.gates, "gate-tests")) {
+    const own = await sourceFiles(config, config.paths.checks);
+    problems.push(
+      ...checkGatesAreTested(
+        own.filter((file) => !TEST_FILE.test(file.path)),
+        own.filter((file) => TEST_FILE.test(file.path)),
+      ),
+    );
+    if (own.length > 0) lines.push(`OK  gates        ${own.filter((f) => !TEST_FILE.test(f.path)).length} repository gate(s), each with a case that must fail`);
+  }
+
+  if (enabled(config.gates, "enforcement-map")) {
+    const map = await read(path.join(config.root, config.docs.enforcement));
+    if (map !== null) {
+      problems.push(
+        ...checkEnforcementMap(
+          map,
+          Object.keys(lintRules).filter((name) => enabled(config.rules, name)),
+          Object.keys(config.gates).filter((name) => enabled(config.gates, name)),
+        ),
+      );
+      lines.push("OK  map          every check the kit runs is named in the enforcement map, and every name resolves");
+    }
   }
 
   const routes = await triggers(config);

@@ -22,6 +22,13 @@ function ruleOptions(config) {
       tableFactory: config.tenant.tableFactory,
       indexFactory: config.tenant.indexFactory,
     },
+    "durable-idempotency-key": {
+      keys: config.idempotency.keys,
+      volatile: config.idempotency.volatile,
+      ledgerKey: config.idempotency.ledgerKey,
+      throwawayLedgers: config.idempotency.throwawayLedgers,
+    },
+    "no-supersession-trail": {},
     "signal-last-param": {},
     "no-offset-pagination": {},
     "no-status-literal": {},
@@ -41,6 +48,8 @@ function entries(config, names) {
 
 /** Rules that apply to every file, on both surfaces. */
 const UNIVERSAL = [
+  "durable-idempotency-key",
+  "no-supersession-trail",
   "no-number-in-comment",
   "no-cross-feature-internals",
   "no-offset-pagination",

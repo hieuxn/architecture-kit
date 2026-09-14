@@ -338,3 +338,66 @@ tester.run("no-status-literal", rules["no-status-literal"], {
 });
 
 console.log("every option asserted");
+
+console.log("→", "durable-idempotency-key");
+tester.run("durable-idempotency-key", rules["durable-idempotency-key"], {
+  valid: [
+    { code: "const mutationId = row.id;" },
+    { code: "const body = { mutationId: attempt.storedId };" },
+    { code: "const other = Date.now();" },
+    { code: "send({ requestedAt: Date.now() });" },
+    // Minted, bound, and persisted before it is ever sent — ADR-0050 done right.
+    { code: "const operation = { mutationId: crypto.randomUUID() };\nqueue.push(operation);" },
+    { code: "send({ mutationId: operation.mutationId });" },
+  ],
+  invalid: [
+    { code: "send({ mutationId: crypto.randomUUID() });", errors: [{ messageId: "volatile" }] },
+    { code: "post(url, { clientMutationId: Date.now() });", errors: [{ messageId: "volatile" }] },
+    { code: "api.create({ idempotencyKey: nanoid() });", errors: [{ messageId: "volatile" }] },
+    { code: "send({ mutationId: stored ?? uuid() });", errors: [{ messageId: "volatile" }] },
+    { code: "send({ mutationId: new Date().toISOString() });", errors: [{ messageId: "volatile" }] },
+  ],
+});
+
+console.log("→", "no-supersession-trail");
+tester.run("no-supersession-trail", rules["no-supersession-trail"], {
+  valid: [
+    { code: "// the one place a caller resolves a name\nconst a = 1;" },
+    { code: 'const label = "deprecated";' },
+  ],
+  invalid: [
+    { code: "// deprecated, use the new one\nconst a = 1;", errors: [{ messageId: "trail" }] },
+    { code: "/* superseded by the slice anatomy */\nconst a = 1;", errors: [{ messageId: "trail" }] },
+    { code: "// legacy path, kept for now\nconst a = 1;", errors: [{ messageId: "trail" }] },
+    { code: "// this replaces the old runner\nconst a = 1;", errors: [{ messageId: "trail" }] },
+    { code: "// formerly known as the ledger block\nconst a = 1;", errors: [{ messageId: "trail" }] },
+  ],
+});
+
+console.log("→", "options: the new rules take their vocabulary from config");
+tester.run("durable-idempotency-key", rules["durable-idempotency-key"], {
+  valid: [{ code: "send({ mutationId: ulid() });", options: [{ volatile: ["nanoid"] }] }],
+  invalid: [{ code: "send({ traceKey: ulid() });", options: [{ keys: ["traceKey"], volatile: ["ulid"] }], errors: [{ messageId: "volatile" }] }],
+});
+tester.run("no-supersession-trail", rules["no-supersession-trail"], {
+  valid: [{ code: "// deprecated\nconst a = 1;", options: [{ phrases: ["obsolete"] }] }],
+  invalid: [{ code: "// obsolete now\nconst a = 1;", options: [{ phrases: ["obsolete"] }], errors: [{ messageId: "trail" }] }],
+});
+
+// The exemption that made this rule usable: a store thrown away at the end of the call
+// has nothing to recognise a repeat in, so the key is disposable by design.
+tester.run("durable-idempotency-key", rules["durable-idempotency-key"], {
+  valid: [
+    { code: "runPipeline({ pipeline, mutationId: crypto.randomUUID(), ledger: new InMemoryPipelineLedger() });" },
+  ],
+  invalid: [
+    {
+      code: "runPipeline({ pipeline, mutationId: crypto.randomUUID(), ledger: durableLedger });",
+      errors: [{ messageId: "volatile" }],
+    },
+    {
+      code: "runPipeline({ pipeline, mutationId: crypto.randomUUID(), ledger: new PostgresLedger() });",
+      errors: [{ messageId: "volatile" }],
+    },
+  ],
+});
