@@ -1,18 +1,31 @@
 # STATE
 
-## Done
+Both halves are built, and `quality-control-mono` now runs on them.
 
-- **P0** repo skeleton, PLAN.md, git initialised.
-- **P1** `src/config.mjs` — `qc.config.json` loader, deep-merged over defaults that reproduce the
-  reference layout. A repo matching the reference writes no config at all.
-- **P2** 10 lint rules in `src/eslint/rules/`, each reading its shape from ESLint options.
-  Original fixture suite passes unchanged; one option case per knob.
-- **P3** 11 gates in `src/gates/` with their tests. 117 tests pass (102 carried over unchanged,
-  which is the evidence parameterisation changed no behaviour, plus 15 option cases).
+## What exists
+
+| Path | Holds |
+|---|---|
+| `.claude-plugin/`, `hooks/`, `skills/`, `commands/` | the Claude Code plugin `architecture` |
+| `packages/qc-harness/src/gates/` | 11 gates, each with its must-fail case |
+| `packages/qc-harness/src/eslint/` | 10 rules, a preset, and the fixture suite |
+| `packages/qc-harness/src/cli/` | `qc check｜init｜feature｜install-hooks｜config` |
+| `packages/qc-harness/templates/` | decisions, architecture, enforcement, guards, performance, glossary, ui, CLAUDE.md, thresholds, git hook, CI |
+
+`pnpm test` — 123 passing.
+
+## Acceptance, passed
+
+1. **`qc check` reproduces the old checker** on `quality-control-mono`'s real code: 30 feature
+   folders, the same two tenant-predicate exemptions, same verdict. Only two wordings differ, both
+   deliberate (`bff` → `edge`, a dropped citation the kit cannot make).
+2. **The lint preset reproduces the old eslint config byte for byte** across the whole repository,
+   compared back to back on one tree.
+3. **A fresh empty repository** goes `qc init` → `qc feature` → green `qc check`.
+4. **The hooks** no-op without `qc.config.json`, pass a good file, and return exit 2 with the
+   finding on a bad one.
 
 ## Renames, deliberate
-
-The kit does not name a vendor or this repository's history.
 
 | was | is | why |
 |---|---|---|
@@ -20,27 +33,13 @@ The kit does not name a vendor or this repository's history.
 | `headless-pipeline-no-react` | `headless-pipeline-no-view` | the view library is config |
 | `disallowed-legacy` | `disallowed-flat-anatomy` | "legacy" is this repo's history |
 
-`checkSelfContained(files, foreign)` now takes the foreign-name list; it hardcoded this
-repository's predecessor. A repo naming none has nothing to fail.
+`checkSelfContained(files, foreign)` takes the foreign-name list; it hardcoded one repository's
+predecessor.
 
-- **P4a** `qc check` — the I/O layer, every path from config. `src/config.test.mjs` asserts the
-  switch maps and the real rule and gate names agree, so the next rename cannot silently
-  disable a check.
+## Open
 
-## Acceptance, already passing
-
-`qc check` run against `quality-control-mono` reproduces that repo's own `scripts/check.mjs`
-output exactly: 30 feature folders, the same two tenant-predicate exemptions, green. The only
-diff is two deliberate wordings (`bff` → `edge`, and a dropped `QC-010` in a line the kit cannot
-cite). The single-file fast path the post-edit hook calls works, and pointing `tenant.sqlColumn`
-at a name the repo does not use turns the run red — so it is reading, not just passing.
-
-## Next
-
-**P4b** `qc init` / `qc feature` / `qc install-hooks`, **P5** templates, **P6** the plugin,
-**P7** rewire `quality-control-mono` onto the kit.
-
-## Watch
-
-- A block comment cannot contain `*/` — a JSDoc holding a path glob closed the comment early once.
-- P7 is the acceptance test: the kit reproducing this repo's green `pnpm check` on its real code.
+- **The dependency is a local file link.** `quality-control-mono` has
+  `"@shawry/qc-harness": "file:../architecture-kit/packages/qc-harness"`, which only resolves on a
+  machine with both checkouts side by side. Publish, or point at the git URL, before anyone else
+  clones it.
+- The kit repository has no remote and no CI of its own yet.

@@ -31,16 +31,16 @@ A new project turns off what does not apply.
 
 ## Phases
 
-- [ ] **P0** repo skeleton, PLAN/STATE
-- [ ] **P1** `qc.config.json` schema + loader with defaults
-- [ ] **P2** 11 eslint rules + `rules.test.mjs` → `src/eslint/`, parameterized
-- [ ] **P3** 14 gates + tests → `src/gates/`, parameterized
-- [ ] **P4** CLI `qc`: `check`, `gate:test`, `init`, `gen:feature`, `codegen`, `install-hooks`
-- [ ] **P5** templates: `docs/{decisions,architecture,enforcement,guards,glossary,performance}.md`,
+- [x] **P0** repo skeleton, PLAN/STATE
+- [x] **P1** `qc.config.json` schema + loader with defaults
+- [x] **P2** 11 eslint rules + `rules.test.mjs` → `src/eslint/`, parameterized
+- [x] **P3** 14 gates + tests → `src/gates/`, parameterized
+- [x] **P4** CLI `qc`: `check`, `gate:test`, `init`, `gen:feature`, `codegen`, `install-hooks`
+- [x] **P5** templates: `docs/{decisions,architecture,enforcement,guards,glossary,performance}.md`,
       `CLAUDE.md`, `.githooks/pre-commit`, `ci.yml`, `quality-thresholds.json`, `.jscpd.json`
-- [ ] **P6** plugin half: `plugin.json`, `marketplace.json`, `hooks/hooks.json`, skills, commands
-- [ ] **P7** rewire `quality-control-mono` onto the kit — `pnpm check` green, originals still present
-- [ ] **P8** delete originals there (QC-008: rewritten in place, no shims)
+- [x] **P6** plugin half: `plugin.json`, `marketplace.json`, `hooks/hooks.json`, skills, commands
+- [x] **P7** rewire `quality-control-mono` onto the kit — `pnpm check` green, originals still present
+- [x] **P8** delete originals there (QC-008: rewritten in place, no shims)
 
 ## Acceptance
 
