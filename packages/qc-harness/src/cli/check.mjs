@@ -287,6 +287,20 @@ export async function runCheck(config, only) {
   const lines = [];
   const taken = [];
 
+  // A config whose roots all point at nothing sweeps nothing and still ends green. This is the
+  // silence `unfound-constant` already refuses for an agreement, applied to the roots themselves.
+  // One root missing is ordinary — a repository with no frontend is not misconfigured — so only
+  // the case where not a single configured root exists is reported.
+  const rootExists = await Promise.all(roots.map((root) => stat(root).then(() => true, () => false)));
+  const rootless = roots.length > 0 && !rootExists.includes(true);
+  if (rootless) {
+    problems.push({
+      path: "qc.config.json",
+      rule: "unfound-root",
+      detail: `no configured feature root exists (${config.featureRoots.join(", ")}) — scaffold a feature, or point featureRoots at this repository's layout; \`qc config\` prints what is in force`,
+    });
+  }
+
   if (enabled(config.gates, "eight-blocks")) {
     const relative = features.map((feature) => ({
       ...feature,
@@ -297,7 +311,7 @@ export async function runCheck(config, only) {
   if (enabled(config.gates, "headless-sagas")) {
     problems.push(...checkHeadlessPipelines(contents, { block: config.saga.headlessBlock, viewModules: config.saga.viewModules }));
   }
-  lines.push(`OK  structure    ${features.length} feature folder(s)`);
+  if (!rootless) lines.push(`OK  structure    ${features.length} feature folder(s)`);
 
   if (relativeOnly) return { problems, lines };
 

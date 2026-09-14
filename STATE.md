@@ -12,7 +12,7 @@ Both halves are built, and `quality-control-mono` now runs on them.
 | `packages/qc-harness/src/cli/` | `qc check｜init｜feature｜install-hooks｜config` |
 | `packages/qc-harness/templates/` | decisions, architecture, enforcement, guards, performance, glossary, ui, CLAUDE.md, thresholds, git hook, CI |
 
-`pnpm test` — 123 passing.
+`pnpm test` — 168 passing.
 
 ## Acceptance, passed
 
@@ -139,3 +139,35 @@ the CI smoke test, and the reason it exists.
   `eight-blocks`. It now refuses and says which of the three fixes applies.
 
 The right thing has to be the cheapest thing; a generator that emits rejected code inverts that.
+
+
+## `unfound-root` — the roots themselves
+
+Found by testing the kit against a repository whose layout is not the reference one. `qc init`
+writes concrete `featureRoots`, and nothing required them to exist. A repository with features under
+`services/api/features/` went `qc init` → `qc check` → **green at rc 0** while holding an unscoped
+SQL statement, a raw `fetch` and a disallowed subfolder. The sweep matched nothing, so every gate
+downstream of it passed on an empty set, and `OK  structure    0 feature folder(s)` read as a pass.
+
+This is the silence `unfound-constant` already refuses for an agreement, applied to the roots. A
+configured root that matches nothing is now a problem, and the structure line is withheld when it
+fires.
+
+**One root missing is deliberately not a finding.** The kit's own from-nothing smoke test proves
+why: `qc feature orders` scaffolds under `backend/src/features` and creates no frontend, so
+demanding every configured root exist would fail the kit's own documented setup path — and would
+cry wolf at every backend-only adopter, which is how a rule gets switched off. Only the case where
+not a single configured root exists is reported.
+
+It is a pre-flight check inside `runCheck`, not a gate in `config.gates`. Two reasons: a repository
+should not be able to switch off the check that says its configuration points at nothing, and the
+gate roster is what `enforcement-map` validates `docs/enforcement.md` against, so a new gate name
+would demand a new row in every consuming repository at once.
+
+Consequence, handled: `qc init` on an empty repository now has no root yet, so init's printed step
+list ends with `qc feature <domain-name>` before `qc check` — the path CI already smoke-tests.
+
+`featureRoots: []` is left alone deliberately. An empty list is an adopter saying this repository
+has no feature roots, which is coherent for one that wants the citation and audit checks and no
+anatomy; flagging it would manufacture a decision nobody made. The check fires on roots that were
+named and are not there, which is the mismatch, not the opt-out.

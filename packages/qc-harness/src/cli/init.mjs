@@ -81,7 +81,7 @@ Next:
      never renumber, because every citation points at a number.
   2. Edit docs/glossary.md and the per-surface table in docs/performance.md.
   3. Point qc.config.json at your layout if it differs from the reference. \`qc config\`
-     prints what is in force.
+     prints what is in force — featureRoots matching nothing is a failed check, not a pass.
   4. \`qc install-hooks\` to bind the pre-commit hook.
-  5. \`qc check\`.`);
+  5. \`qc feature <domain-name>\` to scaffold the first slice, then \`qc check\`.`);
 }
