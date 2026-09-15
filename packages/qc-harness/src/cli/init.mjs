@@ -3,6 +3,7 @@
 // on every file. So `init` is not a convenience — it is the gate's own precondition.
 
 import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { withEnforcementMap } from "../enforcement-map.mjs";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,11 +30,18 @@ const FILES = [
   ["github/workflows/ci.yml", ".github/workflows/ci.yml"],
 ];
 
-async function copyTemplate(from, to, force) {
+// The enforcement map is filled in on the way out, so a rule added to the kit cannot ship a
+// template that fails the kit's own enforcement-map gate.
+async function copyTemplate(from, to, force, config) {
   if (existsSync(to) && !force) return { to, status: "kept" };
   await mkdir(path.dirname(to), { recursive: true });
-  await copyFile(from, to);
-  return { to, status: existsSync(to) && force ? "overwritten" : "written" };
+  const overwriting = existsSync(to);
+  if (to.endsWith(config.docs.enforcement.split("/").pop())) {
+    await writeFile(to, withEnforcementMap(await readFile(from, "utf8"), config));
+  } else {
+    await copyFile(from, to);
+  }
+  return { to, status: overwriting && force ? "overwritten" : "written" };
 }
 
 const SCRIPTS = {
@@ -59,7 +67,7 @@ export async function runInit(config, args = []) {
   const force = args.includes("--force");
   const results = [];
   for (const [source, target] of FILES) {
-    results.push(await copyTemplate(path.join(templates, source), path.join(config.root, target), force));
+    results.push(await copyTemplate(path.join(templates, source), path.join(config.root, target), force, config));
   }
 
   const hook = path.join(config.root, ".githooks/pre-commit");

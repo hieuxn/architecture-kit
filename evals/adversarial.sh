@@ -16,10 +16,16 @@ restore() {
   [ -s "$CFG_BAK" ] && cp "$CFG_BAK" "$P/qc.config.json"
 }
 
-# A gate case: run `qc check`, require the named rule id in the output.
+# The block carrying a workflow is named by config, not by this script: anatomies differ.
+export HEADLESS
+HEADLESS=$(node "$QC" config | python3 -c 'import json,sys;b=json.load(sys.stdin)["saga"]["headlessBlock"];print(" ".join(b if isinstance(b,list) else [b]))')
+
+# A probe that fails to inject proves nothing, so it is reported apart from a check that did not fire.
 gate() {
   local name="$1" expect="$2"; shift 2
-  ( "$@" ) >/dev/null 2>&1
+  if ! ( "$@" ) >/dev/null 2>&1; then
+    printf "  NO-PROBE %-24s %s\n" "$expect" "$name"; fail=$((fail+1)); restore; return
+  fi
   local out; out=$(node "$QC" check 2>&1)
   if grep -q "$expect" <<< "$out"; then printf "  CAUGHT   %-24s %s\n" "$expect" "$name"; pass=$((pass+1));
   else printf "  MISSED   %-24s %s\n" "$expect" "$name"; fail=$((fail+1)); fi
@@ -29,10 +35,24 @@ gate() {
 # A lint case: lint the touched path, require the named rule id.
 rule() {
   local name="$1" expect="$2" target="$3"; shift 3
-  ( "$@" ) >/dev/null 2>&1
+  if ! ( "$@" ) >/dev/null 2>&1; then
+    printf "  NO-PROBE %-28s %s\n" "$expect" "$name"; fail=$((fail+1)); restore; return
+  fi
   local out; out=$(npx eslint "$target" --max-warnings 0 2>&1)
   if grep -q "$expect" <<< "$out"; then printf "  CAUGHT   %-28s %s\n" "$expect" "$name"; pass=$((pass+1));
   else printf "  MISSED   %-28s %s\n" "$expect" "$name"; fail=$((fail+1)); fi
+  restore
+}
+
+# A command case: run a qc subcommand, require the named phrase. Not every check is `qc check`.
+cmd() {
+  local name="$1" expect="$2"; shift 2
+  if ! ( "$@" ) >/dev/null 2>&1; then
+    printf "  NO-PROBE %-24s %s\n" "$expect" "$name"; fail=$((fail+1)); restore; return
+  fi
+  local out; out=$(node "$QC" decisions --check 2>&1)
+  if grep -q "$expect" <<< "$out"; then printf "  CAUGHT   %-24s %s\n" "$expect" "$name"; pass=$((pass+1));
+  else printf "  MISSED   %-24s %s\n" "$expect" "$name"; fail=$((fail+1)); fi
   restore
 }
 
@@ -51,8 +71,8 @@ gate "a public route the edge does not forward" "public-route-unreachable" \
   python3 -c 'import pathlib,re;p=pathlib.Path("backend/src/features/pins/trigger.ts");s=p.read_text();m=re.search(r"\{\s*method:\s*\"\w+\",\s*path:\s*\"[^\"]+\",\s*auth:\s*\"\w+\"",s);p.write_text(s.replace(m.group(0),chr(123)+" method: \"GET\", path: \"/v1/leak\", auth: \"public\"",1))'
 gate "a worker posting to an unserved route" "unserved-internal-route" \
   bash -c 'printf "\nconst bad = \`\${base}/v1/internal/no-such-route\`;\n" >> workers/media-process/src/entry.ts'
-gate "a pipeline importing the view layer" "headless-pipeline-no-view" \
-  bash -c 'f=$(ls backend/src/features/*/pipeline.ts 2>/dev/null | head -1); [ -z "$f" ] && f=frontend/src/features/pins/pipeline.ts; sed -i "1i import * as React from \"react\";" "$f"'
+gate "the block carrying a workflow importing the view layer" "headless-pipeline-no-view" \
+  bash -c "for b in \$HEADLESS; do f=\$(ls backend/src/features/*/\"\$b\".ts frontend/src/features/*/\"\$b\".ts 2>/dev/null | head -1); [ -n \"\$f\" ] && break; done; [ -n \"\$f\" ] || exit 1; sed -i \"1i import * as React from 'react';\" \"\$f\""
 gate "a saga no test names" "untested-saga" \
   bash -c 'printf "\nexport const orphanPipeline = definePipeline({ name: \"orphan\", steps: [] });\n" >> backend/src/features/pins/slices/create-pin.ts'
 gate "a repository gate with no test" "unproven-gate" \
@@ -69,6 +89,12 @@ gate "an agreement left checking nothing" "unfound-constant" \
   bash -c 'sed -i "s/export const PRESIGN_LIFETIME_SECONDS/export const RENAMED_LIFETIMES/" backend/src/application/ports/storage.ts'
 gate "a config whose feature roots match nothing" "unfound-root" \
   bash -c 'echo "{\"featureRoots\": [\"nowhere/src/features\"]}" > qc.config.json'
+
+echo "--- decisions ---"
+cmd "a citation to a decision that was deleted" "cited and not defined" \
+  bash -c "f=\$(ls backend/src/drizzle/*.sql 2>/dev/null | head -1); [ -n \"\$f\" ] || exit 1; printf '\n-- ADR-4242 is not a decision.\n' >> \"\$f\""
+cmd "a gap left in the register" "gap(s) below" \
+  python3 -c "import pathlib,re;p=pathlib.Path('docs/decisions.md');s=p.read_text();m=re.search(r'^\| (ADR|QC)-0*2 \|',s,re.M);p.write_text(s[:m.start()]+s[m.end()-len(m.group(0)):].replace(m.group(0), m.group(0).replace('-02','-92').replace('-002','-092').replace('-0002','-0092'),1))"
 
 echo "--- rules ---"
 T=backend/src/features/pins/shared/queries.ts
@@ -89,6 +115,10 @@ rule "fetch outside the api client" "no-raw-fetch" frontend/src/features/pins/pi
   bash -c 'printf "\nexport const grab = () => fetch(\"/v1/pins\");\n" >> frontend/src/features/pins/pipeline.ts'
 rule "orchestration in a UI trigger" "no-orchestration-in-trigger" frontend/src/features/pins/trigger.tsx \
   bash -c 'printf "\nasync function orchestrate() { await stepOne(); await stepTwo(); await stepThree(); }\n" >> frontend/src/features/pins/trigger.tsx'
+rule "a promise continued with a callback" "no-promise-then" "$T" \
+  bash -c 'printf "\nexport const late = () => Promise.resolve(1).then((n) => n + 1);\n" >> '"$T"
+rule "a comment paragraph" "no-comment-paragraph" "$T" \
+  bash -c 'printf "\n// one line of prose\n// a second line of prose\n// a third line of prose\nexport const noted = 1;\n" >> '"$T"
 
-echo
+echo ""
 echo "caught $pass, missed $fail"

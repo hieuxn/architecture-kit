@@ -23,8 +23,12 @@ test("a squash closes every gap and leaves a contiguous register alone", () => {
   assert.equal(squashPlan(["ADR-0001", "ADR-0002"]).size, 0);
 });
 
-test("a squash keeps the width each series was written at", () => {
+test("a squash keeps the width the series was written at", () => {
   assert.deepEqual([...squashPlan(["QC-003"])], [["QC-003", "QC-001"]]);
+});
+
+test("a series written at two widths settles on the wider one, so no id is truncated", () => {
+  assert.deepEqual([...squashPlan(["ADR-001", "ADR-0005"])], [["ADR-001", "ADR-0001"], ["ADR-0005", "ADR-0002"]]);
 });
 
 test("a run shifting down does not clobber an id it has not moved yet", () => {

@@ -19,7 +19,7 @@ export const REQUIRED_BLOCKS = Object.freeze(["index", "trigger", "pipeline", "r
 
 export const SLICE_REQUIRED_ROOTS = Object.freeze(["index", "trigger", "schema"]);
 export const ALLOWED_SUBDIRS = Object.freeze(["slices", "shared"]);
-export const ALLOWED_SHARED_FILES = Object.freeze(["types", "queries", "guards", "runner"]);
+export const ALLOWED_SHARED_FILES = Object.freeze(["types", "queries", "guards", "runner", "components"]);
 
 const TEST_SUFFIX = ".test.ts";
 const TEST_SUFFIX_TSX = ".test.tsx";

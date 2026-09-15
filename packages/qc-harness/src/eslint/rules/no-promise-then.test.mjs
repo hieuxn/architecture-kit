@@ -14,6 +14,8 @@ test("an awaited promise passes, and a chained one fails", () => {
       { code: "async function f() { await g().finally(() => close()); }" },
       // A member named `then` with no callback is some other api borrowing the word.
       { code: "const when = schedule.then;" },
+      // A computed key that is not a literal cannot be read, so it is left alone.
+      { code: "async function f() { await queue[key](handler); }" },
     ],
     invalid: [
       {
@@ -26,6 +28,14 @@ test("an awaited promise passes, and a chained one fails", () => {
       },
       {
         code: "function f() { return g().then(function (v) { return v; }); }",
+        errors: [{ messageId: "chained" }],
+      },
+      {
+        code: "function f() { return g()[\"then\"](h); }",
+        errors: [{ messageId: "chained", data: { method: "then" } }],
+      },
+      {
+        code: "function f() { return g()?.then(h); }",
         errors: [{ messageId: "chained" }],
       },
     ],

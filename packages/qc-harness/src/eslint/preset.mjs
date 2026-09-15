@@ -139,6 +139,29 @@ export function preset(options = {}) {
     blocks.push({ files: config.clientFiles, rules: entries(config, CLIENT) });
   }
 
+  if (config.frontendLayers && boundaries) {
+    blocks.push({
+      files: config.frontendLayers.include,
+      plugins: { boundaries },
+      settings: {
+        "boundaries/elements": config.frontendLayers.elements,
+        "boundaries/include": config.frontendLayers.include,
+      },
+      rules: {
+        "boundaries/element-types": [
+          "error",
+          {
+            default: "disallow",
+            rules: Object.entries(config.frontendLayers.allow).map(([from, allow]) => ({ from, allow })),
+          },
+        ],
+        ...(config.frontendLayers.external
+          ? { "boundaries/external": ["error", { default: "allow", rules: config.frontendLayers.external }] }
+          : {}),
+      },
+    });
+  }
+
   // Gates and rules are tooling: they name the vocabulary they ban, so they trip
   // their own checks. Fixtures still prove each rule fails on real code.
   blocks.push({

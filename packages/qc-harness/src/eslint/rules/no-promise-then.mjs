@@ -24,14 +24,19 @@ export default {
     return {
       CallExpression(node) {
         const callee = node.callee;
-        if (callee.type !== "MemberExpression" || callee.computed) return;
-        if (callee.property.type !== "Identifier") return;
-        if (!methods.includes(callee.property.name)) return;
+        if (callee.type !== "MemberExpression") return;
+        // `p["then"](fn)` is `p.then(fn)` spelled to evade a rule that only reads dot access.
+        const name = callee.computed
+          ? (typeof callee.property.value === "string" ? callee.property.value : undefined)
+          : callee.property.type === "Identifier"
+            ? callee.property.name
+            : undefined;
+        if (name === undefined || !methods.includes(name)) return;
         // `x.catch` with no callback is some other api borrowing the name.
         const [first] = node.arguments;
         if (first === undefined) return;
         if (first.type !== "ArrowFunctionExpression" && first.type !== "FunctionExpression" && first.type !== "Identifier") return;
-        context.report({ node: callee.property, messageId: "chained", data: { method: callee.property.name } });
+        context.report({ node: callee.property, messageId: "chained", data: { method: name } });
       },
     };
   },

@@ -127,7 +127,7 @@ export const defaults = {
       required: ["index.ts", "schema.ts", "trigger.ts"],
       sliceDir: "slices",
       sharedDir: "shared",
-      sharedFiles: ["types.ts", "queries.ts", "guards.ts", "runner.ts"],
+      sharedFiles: ["types.ts", "queries.ts", "guards.ts", "runner.ts", "components.ts"],
     },
     // The flat pipeline anatomy.
     block: {

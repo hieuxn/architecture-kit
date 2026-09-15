@@ -52,8 +52,10 @@ export function sequences(ids) {
 export function squashPlan(defined) {
   const plan = new Map();
   for (const [prefix, series] of sequences(defined)) {
+    // One width for the series: a squash that left 001 beside 0002 would close gaps and open a seam.
+    const width = Math.max(...series.map((entry) => entry.width));
     series.forEach((entry, index) => {
-      const next = prefix + "-" + String(index + 1).padStart(entry.width, "0");
+      const next = prefix + "-" + String(index + 1).padStart(width, "0");
       if (next !== entry.id) plan.set(entry.id, next);
     });
   }

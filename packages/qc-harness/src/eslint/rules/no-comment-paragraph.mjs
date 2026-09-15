@@ -29,12 +29,19 @@ function proseLinesOf(comment) {
     .filter((line) => line !== "" && !line.startsWith("@"));
 }
 
-/** Consecutive line comments are one thought, so they are measured as one block. */
-function runsOf(comments) {
+function ownLine(comment, lines) {
+  return lines[comment.loc.start.line - 1].slice(0, comment.loc.start.column).trim() === "";
+}
+
+/**
+ * Consecutive own-line comments are one thought, so they are measured as one block. A comment
+ * trailing a statement belongs to that statement: two in a row are two notes, not a paragraph.
+ */
+function runsOf(comments, lines) {
   const runs = [];
   let current = null;
   for (const comment of comments) {
-    if (comment.type === "Block") {
+    if (comment.type === "Block" || !ownLine(comment, lines)) {
       runs.push([comment]);
       current = null;
       continue;
@@ -73,7 +80,7 @@ export default {
 
     return {
       Program() {
-        for (const run of runsOf(context.sourceCode.getAllComments())) {
+        for (const run of runsOf(context.sourceCode.getAllComments(), context.sourceCode.lines)) {
           const prose = run.flatMap(proseLinesOf);
           const node = run[0];
           if (prose.some((line) => BANNER.test(line))) {

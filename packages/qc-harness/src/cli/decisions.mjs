@@ -38,10 +38,11 @@ export const USAGE = `qc decisions — where every decision id is cited, and how
   --dry-run  print what would change and write nothing
   --force    run against a dirty tree`;
 
-/** git's own list: exact, already honouring .gitignore, and never node_modules. */
+// Tracked and untracked-but-not-ignored, so this sees what the citations gate sees.
 async function tracked(root) {
-  const { stdout } = await run("git", ["ls-files", "-z"], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
-  return stdout.split("\0").filter((name) => name !== "" && !BINARY.test(name));
+  const args = ["ls-files", "-z", "--cached", "--others", "--exclude-standard"];
+  const { stdout } = await run("git", args, { cwd: root, maxBuffer: 64 * 1024 * 1024 });
+  return [...new Set(stdout.split("\0"))].filter((name) => name !== "" && !BINARY.test(name));
 }
 
 async function scan(config) {

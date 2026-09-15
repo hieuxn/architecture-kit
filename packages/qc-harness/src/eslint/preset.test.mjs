@@ -77,3 +77,18 @@ test("a repository with no layers still gets the browser rules", () => {
   assert.ok(client, "no client block emitted");
   assert.ok(client.rules["qc/no-raw-fetch"]);
 });
+
+test("the frontendLayers block is emitted when configured and boundaries plugin is supplied", () => {
+  const feConfig = config({
+    frontendLayers: {
+      include: ["frontend/src/**/*.{ts,tsx}"],
+      elements: [{ type: "ui", pattern: "frontend/src/ui/**" }],
+      allow: { ui: [] },
+    },
+  });
+  const withoutPlugin = preset({ config: feConfig });
+  assert.equal(withoutPlugin.filter((b) => b.rules?.["boundaries/element-types"]).length, 0);
+  const withPlugin = preset({ config: feConfig, plugins: { boundaries: {} } });
+  assert.ok(withPlugin.some((b) => b.rules?.["boundaries/element-types"]));
+});
+

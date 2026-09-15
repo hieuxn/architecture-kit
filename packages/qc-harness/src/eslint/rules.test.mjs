@@ -32,6 +32,8 @@ tester.run("no-comment-paragraph", rules["no-comment-paragraph"], {
     { code: "// the one place a caller resolves a name\nconst a = 1;" },
     { code: "/** ADR-0052 — the version check is the guard */\nconst a = 1;" },
     { code: "// first thought\n\n// a second, separated by a blank line\nconst a = 1;" },
+    { code: "const a = 1; // why this one\nconst b = 2; // why that one" },
+    { code: "const a = 1; // why\n// and an own-line note\nconst b = 2;" },
     { code: "// returns early when the caller supplied no folder\nconst a = 1;" },
     { code: "/**\n * one line of why\n * @param {string} a\n * @returns {number}\n */\nconst a = 1;" },
     { code: "// the one error handler owns that mapping; no status is set here\nconst a = 1;" },

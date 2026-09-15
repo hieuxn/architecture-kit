@@ -15,43 +15,24 @@ turn off what this repository does not have. A gate whose input path does not ex
 
 ## Rule to check
 
+Generated from the kit's own rule and gate metadata, so a renamed check cannot leave a stale row.
+Read it as an index; the reasoning is under the headings that follow.
+
+<!-- generated: rule-to-check. -->
+<!-- /generated -->
+
+Checks a repository owns rather than the kit:
+
 | Rule | Check |
 |---|---|
 | Layer direction | `boundaries/element-types` |
 | `domain` imports nothing | `boundaries/external` |
-| Only `index` crosses a feature | `qc/no-cross-feature-internals` |
-| Storage only in the resource block | `qc/storage-only-in-resource` |
-| Repositories and sagas are scoped | `qc/scoped-repository` |
-| No hand-written status | `qc/no-status-literal` |
-| Keyset pagination only | `qc/no-offset-pagination` |
-| Every business table carries the tenant | `qc/tenant-scoped-table` |
-| Cancellation is a parameter | `qc/signal-last-param` |
-| One module calls fetch | `qc/no-raw-fetch` |
-| No number in a comment | `qc/no-number-in-comment` |
 | No `any` | `@typescript-eslint/no-explicit-any` |
 | Function, nesting, file size | `max-lines-per-function`, `max-depth`, `max-lines` |
 | Cross-file duplication | `jscpd`, threshold from `quality-thresholds.json` |
-| UI triggers are thin presenters | `qc/no-orchestration-in-trigger` |
-| Pipelines remain pure and headless | `qc check` (headless-sagas) |
-| Every workflow runs without a view | `qc check` (saga-tests). A saga must be named by a test that imports no view module; a runner that calls it counts |
-| Feature anatomy | `qc check` (eight-blocks) |
-| Cited ids and doc paths resolve | `qc check` (citations) |
-| No reference to another repository | `qc check` (citations, `foreign`) |
 | Every tenant-scoped table has a policy | codegen, from the `tenant-tables` generator |
 | Two features cannot claim one path or schema | codegen, from the `contract-compose` generator |
 | A generated registry is current | your codegen's `--check` |
-| A query names a column a migration declares | `qc check` (sql-identifiers) |
-| A feature's SQL reads only its own tables | `qc check` (sql-identifiers) — the import rule cannot see a table name |
-| Every statement on a business table filters on the tenant | `qc check` (tenant-predicate). An exemption is a marked comment carrying its reason, printed on every run |
-| The edge opens exactly the routes the api serves without a session | `qc check` (public-routes) |
-| Every path a worker posts to is a route the api serves | `qc check` (internal-routes) |
-| A claimed requirement names a test | `qc check` (claimed-requirements) |
-| An idempotency key is a durable id | `qc/durable-idempotency-key` |
-| No supersession trail | `qc/no-supersession-trail` |
-| A repository's own gates are tested | `qc check` (gate-tests) |
-| The audit log is append-only | `qc check` (audit-append-only) |
-| A value written twice agrees with its registry | `qc check` (registry-agreement) |
-| Every rule names a check, and every check is named | `qc check` (enforcement-map) |
 
 ## File length
 
