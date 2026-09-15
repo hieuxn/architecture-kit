@@ -61,6 +61,12 @@ export function rewrite(contents, plan) {
   return contents.replaceAll(new RegExp(`\\b(?:${alternation})\\b`, "g"), (id) => plan.get(id) ?? id);
 }
 
+/** `ADR-0001` is a lookup; `ADR-0001=ADR-0002` merely contains one and is not. */
+export function isBareId(text, prefixes) {
+  const found = text.match(citationPattern(prefixes));
+  return found?.length === 1 && found[0] === text;
+}
+
 export function citationsIn(contents, prefixes) {
   const pattern = citationPattern(prefixes);
   const found = [];
@@ -70,7 +76,15 @@ export function citationsIn(contents, prefixes) {
   return found;
 }
 
-/** A row in the register is not a citation of itself, so `decisionsPath` never counts as a use. */
+/**
+ * A row in the register is not a citation of itself, so `decisionsPath` never counts as a use.
+ *
+ * `fatal` separates what is wrong from what wants a person: a gap and a dangling citation are
+ * defects, but a decision nobody cites may simply be enforced by absence — deleting one to satisfy
+ * a check would be the check bending the work.
+ *
+ * @returns {{text: string, fatal: boolean}[]}
+ */
 export function registerProblems(defined, sites, decisionsPath) {
   const problems = [];
   for (const [prefix, series] of sequences(defined)) {
@@ -79,14 +93,20 @@ export function registerProblems(defined, sites, decisionsPath) {
     for (let number = 1; number <= highest.number; number += 1) {
       if (!series.some((entry) => entry.number === number)) missing.push(number);
     }
-    if (missing.length > 0) problems.push(`${prefix}: ${missing.length} gap(s) below ${highest.id}`);
+    if (missing.length > 0) {
+      problems.push({ text: `${prefix}: ${missing.length} gap(s) below ${highest.id}`, fatal: true });
+    }
   }
   for (const id of [...defined].sort()) {
     const uses = (sites.get(id) ?? []).filter((site) => site.file !== decisionsPath);
-    if (uses.length === 0) problems.push(`${id}: defined and never cited — delete it, or cite it`);
+    if (uses.length === 0) {
+      problems.push({ text: `${id}: defined and never cited — delete it, or cite it`, fatal: false });
+    }
   }
   for (const id of [...sites.keys()].sort()) {
-    if (!defined.has(id)) problems.push(`${id}: cited and not defined in ${decisionsPath}`);
+    if (!defined.has(id)) {
+      problems.push({ text: `${id}: cited and not defined in ${decisionsPath}`, fatal: true });
+    }
   }
   return problems;
 }

@@ -4,8 +4,16 @@ import { execFile } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import { citationPattern, definedIds } from "../gates/citations.mjs";
-import { citationsIn, planProblems, registerProblems, renamePlan, rewrite, squashPlan } from "../decisions.mjs";
+import { definedIds } from "../gates/citations.mjs";
+import {
+  citationsIn,
+  isBareId,
+  planProblems,
+  registerProblems,
+  renamePlan,
+  rewrite,
+  squashPlan,
+} from "../decisions.mjs";
 
 const run = promisify(execFile);
 
@@ -73,7 +81,7 @@ export async function runDecisions(config, args) {
   const { sites, generated, defined } = await scan(config);
   const decisionsPath = config.docs.decisions;
 
-  const one = args.find((arg) => !arg.startsWith("--") && citationPattern(config.citations.prefixes).test(arg));
+  const one = args.find((arg) => isBareId(arg, config.citations.prefixes));
   if (one) {
     const uses = sites.get(one) ?? [];
     console.log(`${one} — ${uses.length} citation(s)${defined.has(one) ? "" : "  [NOT DEFINED]"}`);
@@ -97,9 +105,9 @@ export async function runDecisions(config, args) {
     for (const row of rows) console.log(`  ${row.id}  ${String(row.uses).padStart(4)}`);
     if (problems.length > 0) {
       console.log("");
-      for (const problem of problems) console.log(`  ! ${problem}`);
+      for (const problem of problems) console.log(`  ${problem.fatal ? "!" : "-"} ${problem.text}`);
     }
-    return flag("--check") && problems.length > 0 ? 1 : 0;
+    return flag("--check") && problems.some((problem) => problem.fatal) ? 1 : 0;
   }
 
   const refusals = planProblems(plan, defined);

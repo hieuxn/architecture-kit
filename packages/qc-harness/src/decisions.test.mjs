@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { planProblems, registerProblems, renamePlan, rewrite, squashPlan } from "./decisions.mjs";
+import { isBareId, planProblems, registerProblems, renamePlan, rewrite, squashPlan } from "./decisions.mjs";
 
 test("a squash closes every gap and leaves a contiguous register alone", () => {
   assert.deepEqual(
@@ -54,13 +54,26 @@ test("a gap, an uncited decision and an undefined citation are each reported", (
   ]);
   const problems = registerProblems(new Set(["ADR-0001", "ADR-0003"]), sites, "docs/decisions.md");
   assert.deepEqual(problems, [
-    "ADR: 1 gap(s) below ADR-0003",
-    "ADR-0003: defined and never cited — delete it, or cite it",
-    "ADR-0400: cited and not defined in docs/decisions.md",
+    { text: "ADR: 1 gap(s) below ADR-0003", fatal: true },
+    { text: "ADR-0003: defined and never cited — delete it, or cite it", fatal: false },
+    { text: "ADR-0400: cited and not defined in docs/decisions.md", fatal: true },
   ]);
 });
 
 test("a register with no gap, no orphan and no dangling citation reports nothing", () => {
   const sites = new Map([["ADR-0001", [{ file: "docs/decisions.md" }, { file: "src/a.ts" }]]]);
   assert.deepEqual(registerProblems(new Set(["ADR-0001"]), sites, "docs/decisions.md"), []);
+});
+
+test("an id is a lookup, and a rename pair that contains one is not", () => {
+  assert.equal(isBareId("ADR-0001"), true);
+  assert.equal(isBareId("ADR-0047=ADR-0027"), false);
+  assert.equal(isBareId("see ADR-0001", undefined), false);
+  assert.equal(isBareId("--squash"), false);
+});
+
+test("an uncited decision is reported and does not fail the check", () => {
+  const sites = new Map([["ADR-0001", [{ file: "docs/decisions.md" }]]]);
+  const problems = registerProblems(new Set(["ADR-0001"]), sites, "docs/decisions.md");
+  assert.deepEqual(problems.map((problem) => problem.fatal), [false]);
 });
