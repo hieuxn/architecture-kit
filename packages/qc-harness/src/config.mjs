@@ -106,12 +106,17 @@ export const defaults = {
   saga: {
     factories: ["definePipeline", "defineSaga"],
     viewModules: ["react", "react-dom"],
-    // The block that must stay callable without a view layer.
+    // The block that must stay callable without a view layer. One name, or a list when a
+    // repository carries more than one anatomy.
     headlessBlock: "pipeline",
   },
 
   // Names that must be registered scoped, never singleton.
   scopedSuffixes: ["Repository", "Saga", "UnitOfWork", "UnitOfWorkFactory"],
+
+  // A promise is awaited. `allow` names the modules holding the two shapes await cannot express:
+  // racing against a cancellation, and observing a rejection nobody is waiting for any more.
+  promise: { allow: [] },
 
   anatomy: {
     // Bounded vertical slices.
@@ -152,6 +157,8 @@ export const defaults = {
   generators: ["tenant-tables", "contract-compose"],
 
   rules: {
+    "no-comment-paragraph": true,
+    "no-promise-then": true,
     "no-number-in-comment": true,
     "no-cross-feature-internals": true,
     "no-offset-pagination": true,

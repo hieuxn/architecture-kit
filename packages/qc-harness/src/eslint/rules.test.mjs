@@ -26,6 +26,26 @@ tester.run("no-number-in-comment", rules["no-number-in-comment"], {
   ],
 });
 
+console.log("→", "no-comment-paragraph");
+tester.run("no-comment-paragraph", rules["no-comment-paragraph"], {
+  valid: [
+    { code: "// the one place a caller resolves a name\nconst a = 1;" },
+    { code: "/** ADR-0052 — the version check is the guard */\nconst a = 1;" },
+    { code: "// a wrapped sentence is still one thought,\n// so it stays a comment rather than a paragraph\nconst a = 1;" },
+    { code: "// first thought\n\n// a second, separated by a blank line\nconst a = 1;" },
+    { code: "// returns early when the caller supplied no folder\nconst a = 1;" },
+    { code: "// the one error handler owns that mapping; no status is set here\nconst a = 1;" },
+    { code: "// import from here; this file imports nothing from either\nconst a = 1;" },
+  ],
+  invalid: [
+    { code: "// one\n// two\n// three\nconst a = 1;", errors: [{ messageId: "paragraph" }] },
+    { code: "/**\n * one\n * two\n * three\n */\nconst a = 1;", errors: [{ messageId: "paragraph" }] },
+    { code: "// ==========\nconst a = 1;", errors: [{ messageId: "banner" }] },
+    { code: "// const previous = read();\nconst a = 1;", errors: [{ messageId: "code" }] },
+    { code: "// if (ready) {\nconst a = 1;", errors: [{ messageId: "code" }] },
+  ],
+});
+
 console.log("→", "no-cross-feature-internals");
 tester.run("no-cross-feature-internals", rules["no-cross-feature-internals"], {
   valid: [

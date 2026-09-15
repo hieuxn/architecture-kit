@@ -7,9 +7,11 @@ import { enabled, load, thresholds } from "../config.mjs";
 /** Options each rule needs, derived from one config so a name is written once. */
 function ruleOptions(config) {
   return {
+    "no-comment-paragraph": { doc: config.enforcement ?? "docs/enforcement.md" },
     "no-number-in-comment": { prefixes: config.citations.prefixes, external: config.citations.external, registry: config.thresholds },
     "no-cross-feature-internals": { featureDir: config.featureDir, publicFile: config.publicFile },
     "no-raw-fetch": { client: config.apiClient },
+    "no-promise-then": { allow: config.promise.allow },
     "no-orchestration-in-trigger": { presenters: config.presenters },
     "scoped-repository": { suffixes: config.scopedSuffixes },
     "storage-only-in-resource": {
@@ -50,7 +52,9 @@ function entries(config, names) {
 const UNIVERSAL = [
   "durable-idempotency-key",
   "no-supersession-trail",
+  "no-comment-paragraph",
   "no-number-in-comment",
+  "no-promise-then",
   "no-cross-feature-internals",
   "no-offset-pagination",
   "no-orchestration-in-trigger",

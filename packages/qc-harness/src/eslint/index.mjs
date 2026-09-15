@@ -1,5 +1,7 @@
 import durableIdempotencyKey from "./rules/durable-idempotency-key.mjs";
 import noCrossFeatureInternals from "./rules/no-cross-feature-internals.mjs";
+import noCommentParagraph from "./rules/no-comment-paragraph.mjs";
+import noPromiseThen from "./rules/no-promise-then.mjs";
 import noNumberInComment from "./rules/no-number-in-comment.mjs";
 import noOffsetPagination from "./rules/no-offset-pagination.mjs";
 import noOrchestrationInTrigger from "./rules/no-orchestration-in-trigger.mjs";
@@ -14,6 +16,8 @@ import tenantScopedTable from "./rules/tenant-scoped-table.mjs";
 export const rules = {
   "durable-idempotency-key": durableIdempotencyKey,
   "no-cross-feature-internals": noCrossFeatureInternals,
+  "no-comment-paragraph": noCommentParagraph,
+  "no-promise-then": noPromiseThen,
   "no-number-in-comment": noNumberInComment,
   "no-offset-pagination": noOffsetPagination,
   "no-orchestration-in-trigger": noOrchestrationInTrigger,

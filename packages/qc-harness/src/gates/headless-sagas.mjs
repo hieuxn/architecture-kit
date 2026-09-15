@@ -1,5 +1,10 @@
 // Headless-first architecture check. docs/architecture.md, ADR-0032.
-// The pipeline block must stay callable without a view layer or the DOM.
+// The named block must stay callable without a view layer or the DOM.
+//
+// `block` is one name or a list of them, because the block that carries a workflow is
+// not the same file in every anatomy: a flat feature keeps it in `pipeline`, a sliced
+// one in `shared/runner`. A repository migrating between the two names both, or the
+// gate stops matching anything the day the old name is deleted and reads as passing.
 
 const DEFAULT_BLOCK = "pipeline";
 const DEFAULT_VIEW_MODULES = ["react", "react-dom"];
@@ -11,17 +16,22 @@ function escape(text) {
 
 /**
  * @param {{path: string, contents: string}[]} files
- * @param {{block?: string, viewModules?: string[]}} [options]
+ * @param {{block?: string | string[], viewModules?: string[]}} [options]
  */
 export function checkHeadlessPipelines(files, options = {}) {
-  const block = options.block ?? DEFAULT_BLOCK;
+  const blocks = [options.block ?? DEFAULT_BLOCK].flat();
   const viewModules = options.viewModules ?? DEFAULT_VIEW_MODULES;
   const viewImport = new RegExp(`\\bfrom\\s+["'](?:${viewModules.map(escape).join("|")})["']`);
-  const isBlock = new RegExp(`(?:^|/)${escape(block)}\\.[cm]?[jt]sx?$`);
+  const named = blocks.map((name) => ({
+    name,
+    matches: new RegExp(`(?:^|/)${escape(name)}\\.[cm]?[jt]sx?$`),
+  }));
 
   const problems = [];
   for (const { path, contents } of files) {
-    if (!isBlock.test(path)) continue;
+    const hit = named.find(({ matches }) => matches.test(path));
+    if (hit === undefined) continue;
+    const block = hit.name;
     if (viewImport.test(contents)) {
       problems.push({
         path,

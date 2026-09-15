@@ -37,3 +37,28 @@ test("a file that is not the configured block is not inspected", () => {
   const files = [{ path: "a/features/pins/pipeline.ts", contents: 'import { h } from "vue";' }];
   assert.deepEqual(checkHeadlessPipelines(files, { block: "flow", viewModules: ["vue"] }), []);
 });
+
+test("a list of blocks inspects every name in it", () => {
+  const files = [
+    { path: "a/features/pins/pipeline.ts", contents: 'import * as React from "react";' },
+    { path: "a/features/pins/shared/runner.ts", contents: 'import * as React from "react";' },
+  ];
+  const problems = checkHeadlessPipelines(files, { block: ["pipeline", "shared/runner"] });
+  assert.equal(problems.length, 2);
+  assert.deepEqual(
+    problems.map(({ path }) => path).sort(),
+    ["a/features/pins/pipeline.ts", "a/features/pins/shared/runner.ts"],
+  );
+});
+
+test("a problem names the block that matched, not the whole list", () => {
+  const files = [{ path: "a/features/pins/shared/runner.ts", contents: 'import { useState } from "preact";' }];
+  const [problem] = checkHeadlessPipelines(files, { block: ["pipeline", "shared/runner"] });
+  assert.equal(problem.rule, "headless-pipeline-no-hooks");
+  assert.match(problem.detail, /^shared\/runner must stay headless/);
+});
+
+test("a sibling of a listed block is not inspected", () => {
+  const files = [{ path: "a/features/pins/shared/queries.ts", contents: 'import * as React from "react";' }];
+  assert.deepEqual(checkHeadlessPipelines(files, { block: ["pipeline", "shared/runner"] }), []);
+});
