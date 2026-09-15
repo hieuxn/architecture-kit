@@ -114,6 +114,9 @@ export const defaults = {
   // Names that must be registered scoped, never singleton.
   scopedSuffixes: ["Repository", "Saga", "UnitOfWork", "UnitOfWorkFactory"],
 
+  // A comment is one line of why; reasoning that wants a paragraph is a decision with an id.
+  comments: { maxLines: 1 },
+
   // A promise is awaited. `allow` names the modules holding the two shapes await cannot express:
   // racing against a cancellation, and observing a rejection nobody is waiting for any more.
   promise: { allow: [] },

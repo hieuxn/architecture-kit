@@ -1,8 +1,4 @@
-// What each gate enforces, in one line, beside the gate rather than in a consumer's prose.
-//
-// QC-007 asks every rule to name its check. A repository used to satisfy that by hand-writing
-// the map, which put the same sentence in two places and let one of them rot. The sentence
-// lives here now, so a repository generates its map instead of maintaining it.
+// What each gate enforces, beside the gate, so a consumer generates its map instead of writing one.
 
 export const gateDescriptions = Object.freeze({
   "eight-blocks": "A feature keeps the anatomy it declares, and no block or slice is empty",

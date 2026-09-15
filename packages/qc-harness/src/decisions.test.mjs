@@ -1,6 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { isBareId, planProblems, registerProblems, renamePlan, rewrite, squashPlan } from "./decisions.mjs";
+import {
+  alreadyChecked,
+  audit,
+  isBareId,
+  mergeCandidates,
+  parseRegister,
+  planProblems,
+  registerProblems,
+  renamePlan,
+  rewrite,
+  similarity,
+  squashPlan,
+  terms,
+} from "./decisions.mjs";
 
 test("a squash closes every gap and leaves a contiguous register alone", () => {
   assert.deepEqual(
@@ -76,4 +89,67 @@ test("an uncited decision is reported and does not fail the check", () => {
   const sites = new Map([["ADR-0001", [{ file: "docs/decisions.md" }]]]);
   const problems = registerProblems(new Set(["ADR-0001"]), sites, "docs/decisions.md");
   assert.deepEqual(problems.map((problem) => problem.fatal), [false]);
+});
+
+const REGISTER = `# Decisions
+
+| id | decision | the rule it imposes |
+|---|---|---|
+| ADR-0001 | Keyset pagination only | \`offset\` and \`skip\` are rejected |
+| ADR-0002 | Pagination is keyset | Never an offset, never a skip |
+| ADR-0003 | One cloud | No provider abstraction layer |
+`;
+
+test("a register parses to rows, and a heading separator is not one", () => {
+  const rows = parseRegister(REGISTER, ["ADR"]);
+  assert.deepEqual(rows.map((row) => row.id), ["ADR-0001", "ADR-0002", "ADR-0003"]);
+  assert.equal(rows[2].decision, "One cloud");
+});
+
+test("filler words are not what makes two decisions alike", () => {
+  assert.equal(terms("the one and only of it").size, 0);
+  assert.deepEqual([...terms("Keyset pagination only")], ["keyset", "pagination"]);
+});
+
+test("similarity is over the smaller set, so a terse decision is comparable to a wordy one", () => {
+  assert.equal(similarity(terms("keyset pagination"), terms("keyset pagination rejected skip offset")), 1);
+  assert.equal(similarity(new Set(), terms("anything")), 0);
+});
+
+test("two decisions saying the same thing are offered as a merge, and a third is not", () => {
+  const pairs = mergeCandidates(parseRegister(REGISTER, ["ADR"]));
+  assert.deepEqual(pairs.map((pair) => [pair.left, pair.right]), [["ADR-0001", "ADR-0002"]]);
+  assert.ok(pairs[0].shared.includes("keyset"));
+});
+
+test("every decision whose rule a check already states is reported against that check", () => {
+  const rows = parseRegister(REGISTER, ["ADR"]);
+  const checks = [{ name: "qc/no-offset-pagination", description: "offset and skip are rejected" }];
+  assert.deepEqual(alreadyChecked(rows, checks), [
+    { id: "ADR-0001", check: "qc/no-offset-pagination", score: 1 },
+    { id: "ADR-0002", check: "qc/no-offset-pagination", score: 1 },
+  ]);
+});
+
+test("a backticked identifier is what makes a rule distinctive, not noise to strip", () => {
+  assert.ok(terms("`offset` and `skip` are rejected").has("offset"));
+});
+
+test("a verdict follows how far a decision reaches", () => {
+  const sites = new Map([
+    ["ADR-0001", [{ file: "docs/decisions.md" }, { file: "backend/src/a.ts" }, { file: "frontend/src/b.ts" }]],
+    ["ADR-0002", [{ file: "backend/src/a.ts" }, { file: "backend/src/b.ts" }]],
+    ["ADR-0003", [{ file: "backend/src/a.ts" }]],
+  ]);
+  const { verdicts } = audit(parseRegister(REGISTER, ["ADR"]), sites, "docs/decisions.md");
+  assert.deepEqual(verdicts.map((entry) => [entry.id, entry.verdict]), [
+    ["ADR-0001", "keep"],
+    ["ADR-0002", "local?"],
+    ["ADR-0003", "inline?"],
+  ]);
+});
+
+test("a decision nothing cites is offered for abort", () => {
+  const { verdicts } = audit(parseRegister(REGISTER, ["ADR"]), new Map(), "docs/decisions.md");
+  assert.deepEqual([...new Set(verdicts.map((entry) => entry.verdict))], ["abort?"]);
 });

@@ -1,15 +1,13 @@
-// Code carries the meaning; a comment exists only where it cannot. docs/enforcement.md.
-// Prose quality stays a review concern — this rule enforces only what is mechanical.
+// A comment is one line of why. Reasoning that needs a paragraph is a decision, not a comment.
 
 import { optionsOf, schemaOf } from "../options.mjs";
 
-const DEFAULT_MAX_LINES = 2;
+const DEFAULT_MAX_LINES = 1;
 
 // A rule of repeated punctuation used as a divider.
 const BANNER = /^\s*[*/]*\s*(?:[-=*_~#]{4,})\s*[*/]*\s*$/;
 
-// A statement shape that also ends like a statement: prose beginning "import from here" or
-// ending in a semicolon is a sentence, not code.
+// Code is a statement shape that also ends like one; prose merely starting "import" is not.
 const CODE_SHAPE = [
   /^(?:const|let|var|function|class|import|export|return|await)\s+\S+/,
   /^(?:if|for|while|switch)\s*\(/,
@@ -23,11 +21,12 @@ function looksLikeCode(line) {
   return CODE_SHAPE.some((shape) => shape.test(line)) && STATEMENT_END.test(line);
 }
 
+// A `@param` line is a type annotation, not a sentence, and capping it would delete the types.
 function proseLinesOf(comment) {
   return comment.value
     .split("\n")
     .map((line) => line.replace(/^\s*\*+\s?/, "").trim())
-    .filter((line) => line !== "");
+    .filter((line) => line !== "" && !line.startsWith("@"));
 }
 
 /** Consecutive line comments are one thought, so they are measured as one block. */
@@ -58,9 +57,10 @@ export default {
     schema: schemaOf({
       maxLines: { type: "integer", minimum: 1 },
       doc: { type: "string" },
+      decisions: { type: "string" },
     }),
     messages: {
-      paragraph: "Comment paragraph. One line of why the code cannot say — {{doc}}.",
+      paragraph: "Comment paragraph. One line of why, or make it a decision and cite that — {{decisions}}.",
       banner: "Banner comment. {{doc}}.",
       code: "Commented-out code. {{doc}}.",
     },
@@ -69,6 +69,7 @@ export default {
     const options = optionsOf(context);
     const maxLines = options.maxLines ?? DEFAULT_MAX_LINES;
     const doc = options.doc ?? "docs/enforcement.md";
+    const decisions = options.decisions ?? "docs/decisions.md";
 
     return {
       Program() {
@@ -84,7 +85,7 @@ export default {
             continue;
           }
           if (prose.length > maxLines) {
-            context.report({ node, messageId: "paragraph", data: { doc } });
+            context.report({ node, messageId: "paragraph", data: { decisions } });
           }
         }
       },

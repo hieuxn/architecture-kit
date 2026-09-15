@@ -1,15 +1,4 @@
-// A promise is awaited, never continued with a callback.
-//
-// `.then()` and `.catch()` split one flow across two scopes: the value arrives somewhere the
-// surrounding code cannot see, a thrown error lands in a handler the reader has to go find, and
-// a forgotten `return` inside the callback silently drops the chain. `await` in a `try`/`catch`
-// keeps the whole flow on the page, in order, under one error path.
-//
-// `.finally()` is left alone: it carries no value, reads as cleanup, and has no await form.
-//
-// `allow` names the modules that may still chain: racing a promise against an abort, and marking
-// a rejection handled without waiting for it, have no await form at all. Naming those files keeps
-// the primitive in one audited place instead of spreading disable comments over the callers.
+// A promise is awaited. `.finally()` carries no value and has no await form, so it is left alone.
 
 import { optionsOf, pathSuffix, schemaOf } from "../options.mjs";
 
@@ -38,8 +27,7 @@ export default {
         if (callee.type !== "MemberExpression" || callee.computed) return;
         if (callee.property.type !== "Identifier") return;
         if (!methods.includes(callee.property.name)) return;
-        // Only a call whose argument is a callback is a promise continuation; `x.catch` with
-        // no function argument is some other api borrowing the name.
+        // `x.catch` with no callback is some other api borrowing the name.
         const [first] = node.arguments;
         if (first === undefined) return;
         if (first.type !== "ArrowFunctionExpression" && first.type !== "FunctionExpression" && first.type !== "Identifier") return;

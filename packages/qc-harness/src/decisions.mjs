@@ -1,7 +1,39 @@
 // Renumbering a decision means rewriting every citation of it, or leaving a dangling pointer.
-// Pure, like a gate: what moves and what the text becomes. The CLI does the walking.
 
 import { citationPattern } from "./gates/citations.mjs";
+
+const NOISE = new Set(
+  ("a an and are as at be by for from has have in is it its never no not of on one only or so than that the their then there these they this to what when which who with without every each any all".split(" ")),
+);
+
+/** The register as rows, so an audit can read what a decision says and not merely that it exists. */
+export function parseRegister(markdown, prefixes) {
+  const id = citationPattern(prefixes);
+  const rows = [];
+  for (const line of markdown.split("\n")) {
+    if (!line.startsWith("|")) continue;
+    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    if (cells.length < 3) continue;
+    const found = cells[0].match(id);
+    if (found?.length === 1 && found[0] === cells[0]) {
+      rows.push({ id: cells[0], decision: cells[1], rule: cells[2] });
+    }
+  }
+  return rows;
+}
+
+/** Distinctive words only. A backticked identifier is kept: in a rule it is usually the subject. */
+export function terms(text) {
+  const words = text.toLowerCase().replaceAll("`", " ").match(/[a-z][a-z-]{2,}/g);
+  return new Set((words ?? []).filter((word) => !NOISE.has(word)));
+}
+
+export function similarity(left, right) {
+  if (left.size === 0 || right.size === 0) return 0;
+  let shared = 0;
+  for (const term of left) if (right.has(term)) shared += 1;
+  return shared / Math.min(left.size, right.size);
+}
 
 export function sequences(ids) {
   const bySeries = new Map();
@@ -77,12 +109,7 @@ export function citationsIn(contents, prefixes) {
 }
 
 /**
- * A row in the register is not a citation of itself, so `decisionsPath` never counts as a use.
- *
- * `fatal` separates what is wrong from what wants a person: a gap and a dangling citation are
- * defects, but a decision nobody cites may simply be enforced by absence — deleting one to satisfy
- * a check would be the check bending the work.
- *
+ * A gap and a dangling citation are defects; a decision nobody cites may be enforced by absence.
  * @returns {{text: string, fatal: boolean}[]}
  */
 export function registerProblems(defined, sites, decisionsPath) {
@@ -109,4 +136,56 @@ export function registerProblems(defined, sites, decisionsPath) {
     }
   }
   return problems;
+}
+
+/** Pairs close enough to be one decision, strongest first. */
+export function mergeCandidates(rows, threshold = 0.25) {
+  const scored = rows.map((row) => ({ ...row, terms: terms(`${row.decision} ${row.rule}`) }));
+  const pairs = [];
+  for (let i = 0; i < scored.length; i += 1) {
+    for (let j = i + 1; j < scored.length; j += 1) {
+      const score = similarity(scored[i].terms, scored[j].terms);
+      if (score < threshold) continue;
+      const shared = [...scored[i].terms].filter((term) => scored[j].terms.has(term)).sort();
+      pairs.push({ left: scored[i].id, right: scored[j].id, score, shared });
+    }
+  }
+  return pairs.sort((a, b) => b.score - a.score);
+}
+
+/** A decision whose rule a check already states is said twice: once here, once in the generated map. */
+export function alreadyChecked(rows, checks, threshold = 0.7) {
+  const named = checks.map((check) => ({ ...check, terms: terms(check.description) }));
+  const found = [];
+  for (const row of rows) {
+    const ruleTerms = terms(row.rule);
+    for (const check of named) {
+      const score = similarity(ruleTerms, check.terms);
+      if (score >= threshold) found.push({ id: row.id, check: check.name, score });
+    }
+  }
+  return found.sort((a, b) => b.score - a.score);
+}
+
+/** How far a decision reaches: one area means it is that area's rule, not the repository's. */
+export function reach(sites, id, decisionsPath) {
+  const areas = new Set();
+  let files = 0;
+  for (const site of sites.get(id) ?? []) {
+    if (site.file === decisionsPath) continue;
+    files += 1;
+    const parts = site.file.split("/");
+    areas.add(parts.length > 2 ? parts.slice(0, 2).join("/") : parts[0]);
+  }
+  return { files, areas: [...areas].sort() };
+}
+
+/** Every row asked to earn its id. Each verdict is a prompt for a person, never a finding. */
+export function audit(rows, sites, decisionsPath, checks = []) {
+  const verdicts = rows.map((row) => {
+    const { files, areas } = reach(sites, row.id, decisionsPath);
+    const verdict = files === 0 ? "abort?" : areas.length === 1 && files === 1 ? "inline?" : areas.length === 1 ? "local?" : "keep";
+    return { id: row.id, decision: row.decision, files, areas, verdict };
+  });
+  return { verdicts, merges: mergeCandidates(rows), checked: alreadyChecked(rows, checks) };
 }

@@ -5,9 +5,14 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { definedIds } from "../gates/citations.mjs";
+import { gateDescriptions } from "../descriptions.mjs";
+import { rules as lintRules } from "../eslint/index.mjs";
+import { enabled } from "../config.mjs";
 import {
+  audit,
   citationsIn,
   isBareId,
+  parseRegister,
   planProblems,
   registerProblems,
   renamePlan,
@@ -26,6 +31,7 @@ export const USAGE = `qc decisions — where every decision id is cited, and how
   qc decisions                what is cited where, and what is wrong with the register
   qc decisions ADR-0054       every citation of one id, with its line
   qc decisions --check        exit 1 on a gap, an uncited id, or an undefined one
+  qc decisions --audit        which decisions earn their id, which merge, which are already a check
   qc decisions --squash       close every gap: rewrite the register and every citation
   qc decisions --rename A=B,C=D
 
@@ -53,7 +59,7 @@ async function scan(config) {
     }
   }
   const register = await readFile(path.join(config.root, config.docs.decisions), "utf8");
-  return { sites, generated, defined: definedIds(register, { prefixes }) };
+  return { sites, generated, defined: definedIds(register, { prefixes }), rows: parseRegister(register, prefixes) };
 }
 
 async function apply(config, plan, sites) {
@@ -70,6 +76,54 @@ function usesOf(sites, id, decisionsPath) {
   return (sites.get(id) ?? []).filter((site) => site.file !== decisionsPath);
 }
 
+const VERDICT = {
+  keep: "cited across more than one area",
+  "local?": "one area cites it — that area's doc may be its home",
+  "inline?": "one file cites it — that file's own line may be its home",
+  "abort?": "nothing cites it",
+};
+
+function checksOf(config) {
+  return [
+    ...Object.entries(lintRules)
+      .filter(([name]) => enabled(config.rules, name))
+      .map(([name, rule]) => ({ name: `qc/${name}`, description: rule.meta.docs.description })),
+    ...Object.keys(config.gates)
+      .filter((name) => enabled(config.gates, name))
+      .map((name) => ({ name: `qc check (${name})`, description: gateDescriptions[name] })),
+  ];
+}
+
+function printAudit(rows, sites, decisionsPath, config) {
+  const { verdicts, merges, checked } = audit(rows, sites, decisionsPath, checksOf(config));
+  const order = ["abort?", "inline?", "local?", "keep"];
+  console.log(`${rows.length} decision(s)\n`);
+  for (const name of order) {
+    const group = verdicts.filter((entry) => entry.verdict === name);
+    if (group.length === 0) continue;
+    console.log(`${name}  ${VERDICT[name]}`);
+    for (const entry of group) {
+      const where = entry.areas.length > 0 ? entry.areas.slice(0, 4).join(", ") : "—";
+      console.log(`  ${entry.id}  ${String(entry.files).padStart(4)} file(s)  ${where}`);
+      console.log(`            ${entry.decision.slice(0, 96)}`);
+    }
+    console.log("");
+  }
+  if (merges.length > 0) {
+    console.log("merge?  two decisions saying much the same thing");
+    for (const pair of merges) {
+      console.log(`  ${pair.left} + ${pair.right}  ${(pair.score * 100).toFixed(0)}%  ${pair.shared.slice(0, 8).join(" ")}`);
+    }
+    console.log("");
+  }
+  if (checked.length > 0) {
+    console.log("already a check  the rule is stated here and in the generated enforcement map");
+    for (const hit of checked) console.log(`  ${hit.id}  ${hit.check}  ${(hit.score * 100).toFixed(0)}%`);
+    console.log("");
+  }
+  console.log("Every verdict is a prompt, not a finding. A decision enforced by absence is cited by nothing.");
+}
+
 export async function runDecisions(config, args) {
   const flag = (name) => args.includes(name);
   const value = (name) => (args.indexOf(name) === -1 ? undefined : args[args.indexOf(name) + 1]);
@@ -78,8 +132,13 @@ export async function runDecisions(config, args) {
     return 0;
   }
 
-  const { sites, generated, defined } = await scan(config);
+  const { sites, generated, defined, rows } = await scan(config);
   const decisionsPath = config.docs.decisions;
+
+  if (flag("--audit")) {
+    printAudit(rows, sites, decisionsPath, config);
+    return 0;
+  }
 
   const one = args.find((arg) => isBareId(arg, config.citations.prefixes));
   if (one) {

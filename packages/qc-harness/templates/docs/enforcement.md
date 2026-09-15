@@ -77,7 +77,8 @@ An oversized block has two architectural answers: extract genuinely reused steps
 
 Code carries the meaning. A comment exists only where it cannot.
 
-- One line, bullet style. No paragraphs, no banners, no commented-out code, no "what" comments.
+- **One line.** Reasoning that wants a paragraph is a decision: give it an id and cite that.
+- No banners, no commented-out code, no "what" comments. A JSDoc `@param` line is not prose.
 - Cite a decision — `ADR-0052`, `QC-008`, `docs/guards.md`. Never restate one.
 - Never write a number or quantity threshold (neither digits nor spelled-out words). Cite the
   registry or the doc that owns it. Citation ids are the exception.

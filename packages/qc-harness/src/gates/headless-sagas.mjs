@@ -1,10 +1,4 @@
-// Headless-first architecture check. docs/architecture.md, ADR-0032.
-// The named block must stay callable without a view layer or the DOM.
-//
-// `block` is one name or a list of them, because the block that carries a workflow is
-// not the same file in every anatomy: a flat feature keeps it in `pipeline`, a sliced
-// one in `shared/runner`. A repository migrating between the two names both, or the
-// gate stops matching anything the day the old name is deleted and reads as passing.
+// The named block stays callable without a view. `block` takes a list: anatomies name it differently.
 
 const DEFAULT_BLOCK = "pipeline";
 const DEFAULT_VIEW_MODULES = ["react", "react-dom"];

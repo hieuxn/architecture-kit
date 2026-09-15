@@ -1,8 +1,4 @@
-// This repository is self-contained: a cited id is defined here or it is a dangling
-// pointer to something a reader cannot open. QC-007.
-
-// A decision id is a prefix and a number. Which prefixes a repository uses is its own
-// business; that it defines every one it cites is not.
+// A cited id is defined here, or it is a pointer to something a reader cannot open. QC-007.
 const DEFAULT_PREFIXES = ["ADR", "QC"];
 const DEFAULT_REQUIREMENT = "REQ-[A-Z]{3}-\\d{3}";
 
@@ -15,9 +11,7 @@ function citationSource(prefixes) {
 }
 
 /**
- * The pattern that decides what is a citation, so a tool that rewrites one matches exactly what
- * this gate reads. A renamer working from its own regex is a second definition free to disagree.
- *
+ * What counts as a citation, so a tool that rewrites one matches what this gate reads.
  * @param {string[]} [prefixes]
  * @returns {RegExp} global, so `matchAll` and `replace` both work off it
  */
@@ -62,10 +56,7 @@ export function checkCitations(files, decisions, requirements, options = {}) {
 }
 
 /**
- * A reference reaching outside this repository is a broken repository. Which names
- * count as foreign is per repository: a predecessor, a sibling checkout, a spec that
- * lives somewhere a reader cannot open.
- *
+ * A reference reaching outside this repository is a broken repository.
  * @param {{path: string, contents: string}[]} files
  * @param {string[]} [foreign] regular expression sources, each optionally `/pattern/flags`
  */

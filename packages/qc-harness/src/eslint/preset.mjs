@@ -7,7 +7,11 @@ import { enabled, load, thresholds } from "../config.mjs";
 /** Options each rule needs, derived from one config so a name is written once. */
 function ruleOptions(config) {
   return {
-    "no-comment-paragraph": { doc: config.enforcement ?? "docs/enforcement.md" },
+    "no-comment-paragraph": {
+      doc: config.enforcement ?? "docs/enforcement.md",
+      decisions: config.docs.decisions,
+      maxLines: config.comments.maxLines,
+    },
     "no-number-in-comment": { prefixes: config.citations.prefixes, external: config.citations.external, registry: config.thresholds },
     "no-cross-feature-internals": { featureDir: config.featureDir, publicFile: config.publicFile },
     "no-raw-fetch": { client: config.apiClient },
