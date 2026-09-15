@@ -12,6 +12,7 @@ import {
   audit,
   citationsIn,
   isBareId,
+  isImmutable,
   parseRegister,
   planProblems,
   registerProblems,
@@ -64,13 +65,24 @@ async function scan(config) {
 }
 
 async function apply(config, plan, sites) {
-  const touched = new Set();
-  for (const [from] of plan) for (const site of sites.get(from) ?? []) touched.add(site.file);
+  const cited = new Set();
+  for (const [from] of plan) for (const site of sites.get(from) ?? []) cited.add(site.file);
+  const immutable = config.decisions.immutable;
+  const refused = [...cited].filter((file) => isImmutable(file, immutable)).sort();
+  const touched = new Set([...cited].filter((file) => !isImmutable(file, immutable)));
   for (const file of [...touched].sort()) {
     const full = path.join(config.root, file);
     await writeFile(full, rewrite(await readFile(full, "utf8"), plan));
   }
-  return touched;
+  return { touched, refused };
+}
+
+// A hashed file's bytes are its identity, so the stale id stays and a person decides what to do about it.
+function reportRefused(refused) {
+  if (refused.length === 0) return;
+  console.log(`\n  ${refused.length} content-addressed file(s) cite a renumbered id and were NOT rewritten:`);
+  for (const file of refused) console.log(`    ${file}`);
+  console.log("  Editing one invalidates the checksum its ledger recorded. Leave the id, or re-ledger deliberately.");
 }
 
 function usesOf(sites, id, decisionsPath) {
@@ -195,11 +207,14 @@ export async function runDecisions(config, args) {
   if (flag("--dry-run")) {
     const files = new Set();
     for (const [from] of plan) for (const site of sites.get(from) ?? []) files.add(site.file);
-    console.log(`\n  ${files.size} file(s) would change. Nothing written.`);
+    const held = [...files].filter((file) => isImmutable(file, config.decisions.immutable));
+    console.log(`\n  ${files.size - held.length} file(s) would change. Nothing written.`);
+    reportRefused(held);
     return 0;
   }
 
-  const touched = await apply(config, plan, sites);
+  const { touched, refused } = await apply(config, plan, sites);
   console.log(`\nOK  decisions     ${plan.size} id(s) renumbered across ${touched.size} file(s)`);
+  reportRefused(refused);
   return 0;
 }

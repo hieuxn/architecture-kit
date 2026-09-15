@@ -28,6 +28,11 @@ export const defaults = {
     external: ["REQ-[A-Z]{3}-\\d+", "T\\d+-\\d+", "D\\d+"],
   },
 
+  decisions: {
+    // Content-addressed files: a ledger hashes them, so renumbering a citation inside one reads as tampering.
+    immutable: ["(^|/)(drizzle|migrations?)/[^/]*\\.sql$"],
+  },
+
   thresholds: "quality-thresholds.json",
 
   // A key that makes a retry a resume rather than a second write. docs/guards.md.

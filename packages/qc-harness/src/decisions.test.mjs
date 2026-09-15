@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { defaults } from "./config.mjs";
 import {
   alreadyChecked,
   audit,
   isBareId,
+  isImmutable,
   mergeCandidates,
   parseRegister,
   planProblems,
@@ -156,4 +158,26 @@ test("a verdict follows how far a decision reaches", () => {
 test("a decision nothing cites is offered for abort", () => {
   const { verdicts } = audit(parseRegister(REGISTER, ["ADR"]), new Map(), "docs/decisions.md");
   assert.deepEqual([...new Set(verdicts.map((entry) => entry.verdict))], ["abort?"]);
+});
+
+test("a migration a ledger hashes is never rewritten, wherever it sits", () => {
+  const patterns = defaults.decisions.immutable;
+  for (const file of [
+    "backend/src/drizzle/0004_pins.sql",
+    "db/migrations/0001_init.sql",
+    "services/api/migration/0002_add_tenant.sql",
+  ]) {
+    assert.equal(isImmutable(file, patterns), true, file);
+  }
+});
+
+test("ordinary source and docs stay rewritable", () => {
+  const patterns = defaults.decisions.immutable;
+  for (const file of [
+    "backend/src/features/pins/schema.ts",
+    "docs/decisions.md",
+    "backend/src/drizzle/meta/_journal.json",
+  ]) {
+    assert.equal(isImmutable(file, patterns), false, file);
+  }
 });

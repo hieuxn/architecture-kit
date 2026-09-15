@@ -95,6 +95,11 @@ export function rewrite(contents, plan) {
   return contents.replaceAll(new RegExp(`\\b(?:${alternation})\\b`, "g"), (id) => plan.get(id) ?? id);
 }
 
+/** A file whose bytes are its identity: rewriting a citation inside one invalidates the hash that names it. */
+export function isImmutable(file, patterns) {
+  return patterns.some((source) => new RegExp(source).test(file));
+}
+
 /** `ADR-0001` is a lookup; `ADR-0001=ADR-0002` merely contains one and is not. */
 export function isBareId(text, prefixes) {
   const found = text.match(citationPattern(prefixes));
