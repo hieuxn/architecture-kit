@@ -11,6 +11,7 @@ const USAGE = `qc — architecture gates
   qc init                scaffold the docs, config, hooks and workflow into this repository
   qc feature <name>      scaffold a feature in the configured anatomy
   qc install-hooks       point git at the kit's pre-commit hook
+  qc decisions [id]      where decisions are cited; --squash closes the gaps
   qc config              print the resolved configuration
 
 Every gate reads qc.config.json. A key it does not set keeps the reference default.`;
@@ -45,6 +46,11 @@ async function main() {
     case "install-hooks": {
       const { installHooks } = await import("./install-hooks.mjs");
       await installHooks(config);
+      return;
+    }
+    case "decisions": {
+      const { runDecisions } = await import("./decisions.mjs");
+      process.exit(await runDecisions(config, rest));
       return;
     }
     case "config":

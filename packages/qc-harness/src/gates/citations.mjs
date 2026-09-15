@@ -14,6 +14,17 @@ function citationSource(prefixes) {
   return prefixes.map((prefix) => `${escape(prefix)}-\\d{3,4}`).join("|");
 }
 
+/**
+ * The pattern that decides what is a citation, so a tool that rewrites one matches exactly what
+ * this gate reads. A renamer working from its own regex is a second definition free to disagree.
+ *
+ * @param {string[]} [prefixes]
+ * @returns {RegExp} global, so `matchAll` and `replace` both work off it
+ */
+export function citationPattern(prefixes) {
+  return new RegExp(`\\b(?:${citationSource(prefixes ?? DEFAULT_PREFIXES)})\\b`, "g");
+}
+
 /** Ids a file may cite, harvested from the decision log's table rows. */
 export function definedIds(decisionsMarkdown, options = {}) {
   const row = new RegExp(`^\\|\\s*(${citationSource(options.prefixes ?? DEFAULT_PREFIXES)})\\s*\\|`);

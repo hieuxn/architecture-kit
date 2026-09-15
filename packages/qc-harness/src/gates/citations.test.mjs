@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { checkCitations, checkSelfContained, definedIds } from "./citations.mjs";
+import { checkCitations, checkSelfContained, definedIds, citationPattern } from "./citations.mjs";
 
 const LOG = `
 | id | decision | rule |
@@ -101,4 +101,15 @@ test("a cited doc that does not exist fails and names it", () => {
   assert.equal(problems.length, 1);
   assert.equal(problems[0].rule, "missing-doc");
   assert.equal(problems[0].detail, "docs/gone.md");
+});
+
+test("the citation pattern is the one the gate reads, and a tool can rewrite by it", () => {
+  const pattern = citationPattern();
+  const found = "ADR-0054 and QC-010, not ADR-00544 or REQ-PHO-001".match(pattern);
+  assert.deepEqual(found, ["ADR-0054", "QC-010"]);
+});
+
+test("the citation pattern honours the prefixes a repository declares", () => {
+  const found = "ADR-0001 DEC-0002".match(citationPattern(["DEC"]));
+  assert.deepEqual(found, ["DEC-0002"]);
 });
