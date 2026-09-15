@@ -2,7 +2,7 @@
 
 import { optionsOf, schemaOf } from "../options.mjs";
 
-const DEFAULT_MAX_LINES = 1;
+const DEFAULT_MAX_LINES = 2;
 
 // A rule of repeated punctuation used as a divider.
 const BANNER = /^\s*[*/]*\s*(?:[-=*_~#]{4,})\s*[*/]*\s*$/;
