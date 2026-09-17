@@ -4,7 +4,7 @@
 // Business logic that calls S3 or SQS directly has no seam left for a second provider, and no
 // seam for a test double either — the two reasons the port exists in the first place.
 
-import { moduleGroup, optionsOf, schemaOf, scopeGroup } from "../options.mjs";
+import { filenameOf, moduleGroup, optionsOf, schemaOf, scopeGroup } from "../options.mjs";
 import { isExemptFile } from "./module-boundary.mjs";
 
 const DEFAULT_SCOPES = ["@aws-sdk", "@azure", "@google-cloud"];
@@ -32,7 +32,7 @@ export default {
     const modules = moduleGroup(options.modules ?? DEFAULT_MODULES);
     const allowedFiles = options.allowedFiles ?? DEFAULT_ALLOWED_FILES;
     const allowedPaths = options.allowedPaths ?? DEFAULT_ALLOWED_PATHS;
-    const exempt = isExemptFile(context.filename, { allowedBasenames: allowedFiles, allowedPathPrefixes: allowedPaths });
+    const exempt = isExemptFile(filenameOf(context), { allowedBasenames: allowedFiles, allowedPathPrefixes: allowedPaths });
 
     return {
       ImportDeclaration(node) {

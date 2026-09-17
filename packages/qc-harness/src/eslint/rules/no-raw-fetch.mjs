@@ -1,6 +1,6 @@
 // One module builds a URL and calls fetch. docs/architecture.md.
 
-import { optionsOf, pathSuffix, schemaOf } from "../options.mjs";
+import { filenameOf, optionsOf, pathSuffix, schemaOf } from "../options.mjs";
 
 const DEFAULT_CLIENT = "platform/api-client.ts";
 
@@ -13,7 +13,7 @@ export default {
   },
   create(context) {
     const client = optionsOf(context).client ?? DEFAULT_CLIENT;
-    if (pathSuffix(client).test(context.filename)) return {};
+    if (pathSuffix(client).test(filenameOf(context))) return {};
     const report = (node) => context.report({ node, messageId: "raw", data: { client } });
     return {
       CallExpression(node) {

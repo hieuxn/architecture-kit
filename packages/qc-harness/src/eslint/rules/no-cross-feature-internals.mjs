@@ -1,7 +1,7 @@
 // Only the public file may be imported across features. docs/architecture.md.
 
 import path from "node:path";
-import { escape, optionsOf, schemaOf } from "../options.mjs";
+import { escape, filenameOf, optionsOf, schemaOf } from "../options.mjs";
 
 const DEFAULT_FEATURE_DIR = "features";
 const DEFAULT_PUBLIC_FILE = "index";
@@ -36,12 +36,13 @@ export default {
     const options = optionsOf(context);
     const publicFile = options.publicFile ?? DEFAULT_PUBLIC_FILE;
     const parse = parser(options.featureDir ?? DEFAULT_FEATURE_DIR);
-    const here = parse(context.filename);
+    const filename = filenameOf(context);
+    const here = parse(filename);
     return {
       ImportDeclaration(node) {
         const source = node.source.value;
         if (typeof source !== "string") return;
-        const there = parse(resolve(context.filename, source));
+        const there = parse(resolve(filename, source));
         if (!there) return;
         if (here && here.feature === there.feature) return;
         if (there.rest === "" || there.rest === publicFile) return;

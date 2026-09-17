@@ -1,7 +1,7 @@
 // A UI trigger is a thin presenter. Multi-step orchestration belongs in a headless
 // pipeline. docs/architecture.md.
 
-import { optionsOf, pathGlob, schemaOf, TEST_FILE } from "../options.mjs";
+import { filenameOf, optionsOf, pathGlob, schemaOf, TEST_FILE } from "../options.mjs";
 
 const DEFAULT_PRESENTERS = "frontend/src/features/*/trigger";
 const DEFAULT_MAX_AWAITS = 1;
@@ -18,7 +18,7 @@ export default {
   },
   create(context) {
     const options = optionsOf(context);
-    const filename = context.filename || "";
+    const filename = filenameOf(context);
     if (!pathGlob(options.presenters ?? DEFAULT_PRESENTERS).test(filename)) return {};
     if (TEST_FILE.test(filename)) return {};
 

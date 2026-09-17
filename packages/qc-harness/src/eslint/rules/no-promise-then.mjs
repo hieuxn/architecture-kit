@@ -1,6 +1,6 @@
 // A promise is awaited. `.finally()` carries no value and has no await form, so it is left alone.
 
-import { optionsOf, pathSuffix, schemaOf } from "../options.mjs";
+import { filenameOf, optionsOf, pathSuffix, schemaOf } from "../options.mjs";
 
 const DEFAULT_METHODS = ["then", "catch"];
 
@@ -19,7 +19,7 @@ export default {
   create(context) {
     const options = optionsOf(context);
     const methods = options.methods ?? DEFAULT_METHODS;
-    const allowed = (options.allow ?? []).some((file) => pathSuffix(file).test(context.filename));
+    const allowed = (options.allow ?? []).some((file) => pathSuffix(file).test(filenameOf(context)));
     if (allowed) return {};
     return {
       CallExpression(node) {

@@ -7,6 +7,11 @@ export function escape(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Every path pattern below is forward-slash; `context.filename` is the OS separator, "\\" on Windows. */
+export function filenameOf(context) {
+  return (context.filename ?? "").replaceAll("\\", "/");
+}
+
 /** `platform/api-client.ts` -> matches any file ending in that path. */
 export function pathSuffix(value) {
   return new RegExp(`(?:^|/)${escape(value)}$`);

@@ -483,3 +483,74 @@ tester.run("durable-idempotency-key", rules["durable-idempotency-key"], {
     },
   ],
 });
+
+// `context.filename` is the OS separator — "\\" on Windows. Every rule that reads it must
+// normalize before matching a forward-slash pattern, or every path-based exemption below
+// silently never fires there. filenameOf() in options.mjs is the one place that normalizes.
+console.log("→", "windows-style backslash filenames");
+
+tester.run("no-cross-feature-internals (backslash path)", rules["no-cross-feature-internals"], {
+  valid: [{ code: "import { x } from '../pins/index.js';", filename: "a\\features\\pins\\index.ts" }],
+  invalid: [
+    {
+      code: "import { x } from '../pins/store.js';",
+      filename: "a\\features\\photos\\flow.ts",
+      errors: [{ messageId: "internal" }],
+    },
+  ],
+});
+
+tester.run("no-orchestration-in-trigger (backslash path)", rules["no-orchestration-in-trigger"], {
+  valid: [{ code: "async function onClick() { await a(); }", filename: "frontend\\src\\features\\pins\\trigger.ts" }],
+  invalid: [
+    {
+      code: "async function onClick() { await a(); await b(); }",
+      filename: "frontend\\src\\features\\pins\\trigger.ts",
+      errors: [{ messageId: "orchestration" }],
+    },
+  ],
+});
+
+tester.run("no-promise-then (backslash path)", rules["no-promise-then"], {
+  valid: [
+    {
+      code: "p.then(x);",
+      filename: "packages\\kernel\\src\\abortable.ts",
+      options: [{ allow: ["packages/kernel/src/abortable.ts"] }],
+    },
+  ],
+  invalid: [
+    {
+      code: "p.then(x);",
+      filename: "backend\\src\\main.ts",
+      options: [{ allow: ["packages/kernel/src/abortable.ts"] }],
+      errors: [{ messageId: "chained" }],
+    },
+  ],
+});
+
+tester.run("no-raw-fetch (backslash path)", rules["no-raw-fetch"], {
+  valid: [{ code: "fetch(url);", filename: "frontend\\src\\platform\\api-client.ts" }],
+  invalid: [{ code: "fetch(url);", filename: "frontend\\src\\features\\pins\\index.ts", errors: [{ messageId: "raw" }] }],
+});
+
+tester.run("storage-only-in-resource (backslash path)", rules["storage-only-in-resource"], {
+  valid: [{ code: "import { Pool } from 'pg';", filename: "backend\\src\\infrastructure\\db\\pg-pool.ts" }],
+  invalid: [
+    { code: "import { Pool } from 'pg';", filename: "backend\\src\\features\\pins\\pipeline.ts", errors: [{ messageId: "misplaced" }] },
+  ],
+});
+
+tester.run("cloud-sdk-only-in-adapter (backslash path)", rules["cloud-sdk-only-in-adapter"], {
+  valid: [
+    { code: "import { S3Client } from '@aws-sdk/client-s3';", filename: "backend\\src\\main.ts" },
+    { code: "import { S3Client } from '@aws-sdk/client-s3';", filename: "workers\\media-process\\src\\entry.ts" },
+  ],
+  invalid: [
+    {
+      code: "import { S3Client } from '@aws-sdk/client-s3';",
+      filename: "backend\\src\\features\\photos\\pipeline.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+  ],
+});

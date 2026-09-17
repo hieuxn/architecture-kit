@@ -3,7 +3,8 @@
 
 import { pathPrefix } from "../options.mjs";
 
-/** @returns true when this file is allowed to import the restricted module regardless. */
+/** @param filename forward-slash — pass `filenameOf(context)`, never `context.filename` directly.
+ *  @returns true when this file is allowed to import the restricted module regardless. */
 export function isExemptFile(filename, { allowedBasenames = [], allowedPathPrefixes = [] } = {}) {
   const base = filename.split("/").pop() ?? "";
   if (allowedBasenames.includes(base)) return true;
