@@ -16,12 +16,34 @@ beside the check that enforces it — and every check ships a case that must fai
 The plugin's hooks call the package's CLI. Either half works alone: the package is an ordinary dev
 dependency, and the plugin no-ops in any repository without a `qc.config.json`.
 
+## Install
+
+This repository is public, so both halves install from it directly — no token, no fork.
+
+**The Claude Code plugin** (agent hooks, skills, slash commands):
+
+```bash
+claude plugin marketplace add hieuxn/architecture-kit
+claude plugin install architecture@architecture-kit
+```
+
+**The npm package** (gates, lint rules, the `qc` CLI) — as a pinned git dependency, since it is not
+published to a registry:
+
+```bash
+pnpm add -D github:hieuxn/architecture-kit#path:packages/qc-harness --save-exact
+```
+
+pnpm resolves and lockfiles this to an exact commit, so a later `pnpm update architecture-harness`
+is the only thing that moves it. Continue with [Tutorial](#tutorial) below to wire it into a
+repository.
+
 ## Tutorial
 
 ### 1. Set up a repository
 
 ```bash
-pnpm add -D architecture-harness
+pnpm add -D github:hieuxn/architecture-kit#path:packages/qc-harness --save-exact
 npx qc init            # decisions, architecture & enforcement docs, config, git hook, CI
 npx qc install-hooks   # binds .githooks/pre-commit
 ```
@@ -81,10 +103,7 @@ export default preset({
 
 ### 6. Hold an agent to the same rules
 
-```bash
-claude plugin marketplace add hieuxn/architecture-kit
-claude plugin install architecture
-```
+Install the plugin per [Install](#install) above, if you have not already.
 
 A fast per-file pass runs after every edit; a full pass refuses to end a turn while the repository is
 red. Add your own step to that full pass with `QC_STOP_EXTRA` in `.claude/settings.json`:
