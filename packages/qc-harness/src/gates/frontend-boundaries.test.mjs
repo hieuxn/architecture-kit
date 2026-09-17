@@ -53,6 +53,11 @@ test("a backslash path fails loud instead of bucketing every file as one folder"
   assert.throws(() => checkFrontendBoundaries(platformFiles, []), /backslash/);
 });
 
+test("an absolute, OS-native featureFiles path is not the same bug and does not throw", () => {
+  const featureFiles = [{ path: "C:\\repo\\backend\\src\\features\\orders\\index.ts", contents: "" }];
+  assert.doesNotThrow(() => checkFrontendBoundaries([], featureFiles));
+});
+
 test("an inverted feature import is detected", () => {
   const featureFiles = [
     {

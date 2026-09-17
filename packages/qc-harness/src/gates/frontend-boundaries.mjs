@@ -65,10 +65,12 @@ function classifyStemDomain(basename) {
  * @returns {{path: string, rule: string, detail: string}[]}
  */
 export function checkFrontendBoundaries(platformFiles, featureFiles = [], options = {}) {
-  // Every rule below splits a path on "/". A backslash here means a caller's path helper
-  // broke cross-platform normalization — fail loud rather than silently bucket every file
-  // under one fake directory, the way the junk-drawer-folder gate once did on Windows.
-  for (const file of [...platformFiles, ...featureFiles]) {
+  // Only platformFiles' paths are ever split on "/" below — featureFiles' paths are matched
+  // by content and only ever displayed, so an absolute OS path there is not this bug. A
+  // backslash in a platformFiles path means a caller's path helper broke cross-platform
+  // normalization — fail loud rather than silently bucket every file under one fake
+  // directory, the way the junk-drawer-folder gate once did on Windows.
+  for (const file of platformFiles) {
     if (file.path.includes("\\")) {
       throw new Error(`frontend-boundaries: "${file.path}" carries a backslash — pass forward-slash paths`);
     }
