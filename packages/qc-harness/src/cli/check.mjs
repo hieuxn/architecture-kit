@@ -34,8 +34,8 @@ const CITABLE_EXTENSION = /\.(tsx?|mjs|md)$/;
 const read = (file) => readFile(file, "utf8").catch(() => null);
 const list = (dir, options) => readdir(dir, options).catch(() => []);
 
-/** A problem names a path a reader can open, so every record carries a relative one. */
-const relativeTo = (root) => (file) => path.relative(root, file) || file;
+/** A problem names a path a reader can open — forward slashes always, since every gate splits on "/". */
+const relativeTo = (root) => (file) => (path.relative(root, file) || file).split(path.sep).join("/");
 
 async function listFeature(dir) {
   const files = [];
