@@ -17,8 +17,10 @@ export async function installHooks(config, dir = ".githooks") {
     process.exitCode = 1;
     return;
   }
-  const hook = path.join(hooks, "pre-commit");
-  if (existsSync(hook)) await chmod(hook, 0o755);
+  for (const name of ["pre-commit", "pre-push"]) {
+    const hook = path.join(hooks, name);
+    if (existsSync(hook)) await chmod(hook, 0o755);
+  }
   await run("git", ["config", "core.hooksPath", dir], { cwd: config.root });
   console.log(`git core.hooksPath -> ${dir}`);
 }

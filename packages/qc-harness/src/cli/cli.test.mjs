@@ -29,7 +29,7 @@ const quiet = (run) => {
 test("init writes the documents the gates read", async () => {
   const dir = repo();
   await quiet(() => runInit(load(dir)));
-  for (const file of ["qc.config.json", "docs/decisions.md", "docs/enforcement.md", "docs/pagination.md", ".githooks/pre-commit"]) {
+  for (const file of ["qc.config.json", "docs/decisions.md", "docs/enforcement.md", "docs/pagination.md", ".githooks/pre-commit", ".githooks/pre-push"]) {
     assert.ok(existsSync(path.join(dir, file)), `${file} is missing`);
   }
   rmSync(dir, { recursive: true, force: true });

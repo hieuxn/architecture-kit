@@ -1,6 +1,14 @@
 {
-  "description": "Architecture gates: a fast per-file pass after every edit, and a full pass that refuses to end a red turn. Both no-op in a repository with no qc.config.json.",
+  "description": "Architecture gates: a fast per-file pass after every edit, a full pass that refuses to end a red turn, and a work-order guard that keeps an edit inside its declared paths. All three no-op without their own opt-in file.",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/pre-edit-guard.sh\"", "timeout": 30 }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",

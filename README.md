@@ -44,16 +44,17 @@ repository.
 
 ```bash
 pnpm add -D github:hieuxn/architecture-kit#path:packages/qc-harness --save-exact
-npx qc init            # decisions, architecture & enforcement docs, config, git hook, CI
-npx qc install-hooks   # binds .githooks/pre-commit
+npx qc init            # decisions, architecture & enforcement docs, config, git hooks, CI
+npx qc install-hooks   # binds .githooks/pre-commit and .githooks/pre-push
 ```
 
 `qc init` is not a convenience. The citations gate reads `docs/decisions.md`; without that file the
 first gate fails on every source file you have.
 
 It writes `qc.config.json`, `quality-thresholds.json`, `.jscpd.json`, `docs/` (decisions,
-architecture, enforcement, guards, performance, glossary, ui), `.githooks/pre-commit` and
-`.github/workflows/ci.yml`, skipping anything that already exists. It also adds `spec:check`,
+architecture, enforcement, guards, performance, glossary, ui), `.githooks/pre-commit`,
+`.githooks/pre-push` and `.github/workflows/ci.yml`, skipping anything that already exists. It also
+adds `spec:check`,
 `gen:feature` and `prepare` to `package.json`.
 
 ### 2. Make it yours
@@ -113,6 +114,30 @@ red. Add your own step to that full pass with `QC_STOP_EXTRA` in `.claude/settin
 ```
 
 A consuming repository keeps no hook scripts of its own.
+
+### 7. Two git hooks, not one
+
+`pre-commit` is the fast tier: staged-file lint, incremental types, and each touched feature's own
+structure. `pre-push` is the full pass — every repository-wide gate (citations, the tenant
+predicate, route agreement, sagas) — once per push instead of once per commit. A human and an agent
+both go through the same two hooks; neither can commit past the fast tier or push past the full one.
+
+### 8. Hold a swarm to its own scope
+
+When one work order runs several agents against the same working directory, declare its exclusive
+paths once, in a gitignored manifest:
+
+```json
+// .claude/work-order.local.json
+{ "paths": ["frontend/src/platform/**", ".github/workflows/**"] }
+```
+
+A `PreToolUse` hook then refuses any Write or Edit outside those globs, for every agent sharing that
+directory — not just the one told to stay in scope. Delete the file, or narrow it, as the next work
+order starts. Absent the file, nothing is restricted, the same opt-in rule every hook here follows.
+
+This covers one working directory shared by several agents. An agent given its own git worktree
+needs nothing further — it already cannot reach another work order's files.
 
 ## What it enforces
 
