@@ -22,6 +22,7 @@ import { checkGatesAreTested } from "../gates/gate-tests.mjs";
 import { checkAuditAppendOnly } from "../gates/audit-append-only.mjs";
 import { checkEnforcementMap } from "../gates/enforcement-map.mjs";
 import { checkFrontendBoundaries } from "../gates/frontend-boundaries.mjs";
+import { checkTestMirror } from "../gates/test-mirror.mjs";
 import { rules as lintRules } from "../eslint/index.mjs";
 import { enabled } from "../config.mjs";
 
@@ -428,6 +429,16 @@ export async function runCheck(config, only) {
     if (platform.length > 0) {
       problems.push(...checkFrontendBoundaries(platform, contents));
       lines.push("OK  boundaries   platform remains a thin substrate without domain leaks or junk drawers");
+    }
+  }
+  if (enabled(config.gates, "test-mirror")) {
+    const all = await sourceFiles(config);
+    const testPaths = all.filter((file) => TEST_FILE.test(file.path)).map((file) => file.path);
+    const srcPaths = all.filter((file) => !TEST_FILE.test(file.path)).map((file) => file.path);
+    const mirrorProblems = checkTestMirror(testPaths, srcPaths);
+    problems.push(...mirrorProblems);
+    if (mirrorProblems.length === 0) {
+      lines.push("OK  mirror       frontend tests mirror src paths 1:1, no orphaned test");
     }
   }
 

@@ -160,6 +160,7 @@ export const defaults = {
     "gate-tests": true,
     "audit-append-only": true,
     "frontend-boundaries": true,
+    "test-mirror": true,
     "enforcement-map": true,
   },
 

@@ -14,6 +14,7 @@ export const gateDescriptions = Object.freeze({
   "gate-tests": "A repository's own gates each ship a case that must fail",
   "audit-append-only": "The audit log has no update or delete path in any repository",
   "frontend-boundaries": "Platform remains a thin substrate and never holds feature domain logic or junk drawer directories",
+  "test-mirror": "Frontend tests mirror src paths 1:1, and no test is orphaned without a source file",
   "enforcement-map": "Every rule names a check, and every check the kit runs is named",
 });
 
