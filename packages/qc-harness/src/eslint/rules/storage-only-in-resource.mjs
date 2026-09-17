@@ -7,7 +7,8 @@
 // filenames alone forced the one file that must import the driver to disable the
 // rule, and a disable comment is how a rule stops meaning anything.
 
-import { moduleGroup, optionsOf, pathPrefix, schemaOf } from "../options.mjs";
+import { moduleGroup, optionsOf, schemaOf } from "../options.mjs";
+import { isExemptFile } from "./module-boundary.mjs";
 
 const DEFAULT_MODULES = ["drizzle-orm", "pg", "postgres"];
 const DEFAULT_RESOURCE_FILES = ["resource.ts", "schema.ts"];
@@ -30,12 +31,13 @@ export default {
     const resourceFiles = options.resourceFiles ?? DEFAULT_RESOURCE_FILES;
     const driverBinding = options.driverBinding ?? DEFAULT_DRIVER_BINDING;
 
-    const base = context.filename.split("/").pop() ?? "";
-    const isResource = resourceFiles.includes(base);
-    const isDriverBinding = driverBinding ? pathPrefix(driverBinding).test(context.filename) : false;
+    const exempt = isExemptFile(context.filename, {
+      allowedBasenames: resourceFiles,
+      allowedPathPrefixes: driverBinding ? [driverBinding] : [],
+    });
     return {
       ImportDeclaration(node) {
-        if (isResource || isDriverBinding) return;
+        if (exempt) return;
         const source = node.source.value;
         if (typeof source === "string" && storage.test(source)) {
           context.report({

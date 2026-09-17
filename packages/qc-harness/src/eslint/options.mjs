@@ -27,6 +27,11 @@ export function moduleGroup(names) {
   return new RegExp(`^(?:${names.map(escape).join("|")})(?:/|$)`);
 }
 
+/** `@aws-sdk` -> matches any package published under that npm scope. */
+export function scopeGroup(scopes) {
+  return new RegExp(`^(?:${scopes.map(escape).join("|")})/`);
+}
+
 export function suffixGroup(names) {
   return new RegExp(`(?:${names.map(escape).join("|")})$`);
 }
