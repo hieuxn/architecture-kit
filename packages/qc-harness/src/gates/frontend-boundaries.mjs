@@ -65,6 +65,15 @@ function classifyStemDomain(basename) {
  * @returns {{path: string, rule: string, detail: string}[]}
  */
 export function checkFrontendBoundaries(platformFiles, featureFiles = [], options = {}) {
+  // Every rule below splits a path on "/". A backslash here means a caller's path helper
+  // broke cross-platform normalization — fail loud rather than silently bucket every file
+  // under one fake directory, the way the junk-drawer-folder gate once did on Windows.
+  for (const file of [...platformFiles, ...featureFiles]) {
+    if (file.path.includes("\\")) {
+      throw new Error(`frontend-boundaries: "${file.path}" carries a backslash — pass forward-slash paths`);
+    }
+  }
+
   const problems = [];
   const maxFiles = options.maxFolderFiles ?? DEFAULT_MAX_FOLDER_FILES;
   const exemptDirs = new Set(options.exemptDirs ?? DEFAULT_EXEMPT_DIRS);

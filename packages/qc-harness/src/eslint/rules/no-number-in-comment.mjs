@@ -75,6 +75,8 @@ export default {
           while ((match = citation.exec(stripped)) !== null) {
             stripped = stripped.replace(match[0], "");
           }
+          // Backtick-quoted code is a reference, never a prose quantity claim.
+          stripped = stripped.replace(/`[^`]*`/g, "");
           // A lone list marker or an identifier-embedded digit is not a threshold.
           stripped = stripped.replace(/\b[a-zA-Z_$][\w$]*\d[\w$]*\b/g, "");
           if (DIGIT.test(stripped) || QUANTITY_WORD.test(stripped)) {

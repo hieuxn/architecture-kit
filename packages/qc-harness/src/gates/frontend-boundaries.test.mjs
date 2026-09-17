@@ -48,6 +48,11 @@ test("a junk drawer folder mixing multiple domains is detected", () => {
   assert.ok(junkDrawer.detail.includes("Suggestion:"));
 });
 
+test("a backslash path fails loud instead of bucketing every file as one folder", () => {
+  const platformFiles = [{ path: "platform\\shell\\chrome\\app-header.tsx" }];
+  assert.throws(() => checkFrontendBoundaries(platformFiles, []), /backslash/);
+});
+
 test("an inverted feature import is detected", () => {
   const featureFiles = [
     {

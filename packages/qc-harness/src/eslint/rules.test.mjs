@@ -16,6 +16,7 @@ tester.run("no-number-in-comment", rules["no-number-in-comment"], {
     { code: "// REQ-PHO-003\nconst a = 1;" },
     { code: "// uuidV7 is time-ordered\nconst a = 1;" },
     { code: "// the one place a caller resolves a name\nconst a = 1;" },
+    { code: "// a hand-built `file://${argv[1]}` never matches on Windows\nconst a = 1;" },
   ],
   invalid: [
     { code: "// retry up to 3 times\nconst a = 1;", errors: [{ messageId: "number" }] },
