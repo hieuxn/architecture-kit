@@ -6,6 +6,9 @@ import { rules } from "./eslint/index.mjs";
 
 export const OPEN = "<!-- generated: rule-to-check. -->";
 export const CLOSE = "<!-- /generated -->";
+// A repository may annotate the open marker with its own reminder (e.g. "pnpm codegen.") —
+// matched by prefix, not by exact string, so that annotation does not break detection.
+const OPEN_PATTERN = /<!--\s*generated:\s*rule-to-check\.[^>]*-->/;
 
 function sentence(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -26,11 +29,18 @@ export function enforcementMap(config) {
   return `| Rule | Check |\n|---|---|\n${rows.join("\n")}`;
 }
 
-/** Splices the table between the markers, leaving whatever a repository wrote around them. */
+/**
+ * Splices the table between the markers, leaving whatever a repository wrote around them —
+ * including its own open marker's own text, which this keeps rather than resets to `OPEN`.
+ * @returns {string|null} null when no open marker is found, so a caller can tell that apart
+ *   from a splice that ran and found nothing to change.
+ */
 export function withEnforcementMap(markdown, config) {
-  const at = markdown.indexOf(OPEN);
-  if (at === -1) return markdown;
+  const found = OPEN_PATTERN.exec(markdown);
+  if (!found) return null;
+  const at = found.index;
+  const openText = found[0];
   const after = markdown.indexOf(CLOSE, at);
   const tail = after === -1 ? "" : markdown.slice(after + CLOSE.length);
-  return `${markdown.slice(0, at)}${OPEN}\n\n${enforcementMap(config)}\n\n${CLOSE}${tail}`;
+  return `${markdown.slice(0, at)}${openText}\n\n${enforcementMap(config)}\n\n${CLOSE}${tail}`;
 }

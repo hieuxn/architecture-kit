@@ -14,6 +14,11 @@ export async function runSyncEnforcementMap(config) {
     return;
   }
   const after = withEnforcementMap(before, config);
+  if (after === null) {
+    console.error(`No generated marker found in ${config.docs.enforcement} — nothing to refresh.`);
+    process.exitCode = 1;
+    return;
+  }
   if (after === before) {
     console.log(`OK  enforcement-map   ${config.docs.enforcement} already current`);
     return;

@@ -35,6 +35,12 @@ test("splicing keeps what a repository wrote around the markers", () => {
   assert.ok(!filled.includes("stale"));
 });
 
-test("a document with no markers is left exactly as it was", () => {
-  assert.equal(withEnforcementMap("no markers here", defaults), "no markers here");
+test("a document with no markers returns null, distinct from a splice that changed nothing", () => {
+  assert.equal(withEnforcementMap("no markers here", defaults), null);
+});
+
+test("a repository's own annotation on the open marker survives the splice", () => {
+  const filled = withEnforcementMap(`before\n\n<!-- generated: rule-to-check. pnpm codegen. -->\nstale\n${CLOSE}\n\nafter`, defaults);
+  assert.ok(filled.includes("<!-- generated: rule-to-check. pnpm codegen. -->"));
+  assert.ok(!filled.includes("stale"));
 });

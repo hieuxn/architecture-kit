@@ -6,3 +6,4 @@ export { preset } from "./eslint/preset.mjs";
 export { default as plugin, rules } from "./eslint/index.mjs";
 export { gateDescriptions, describedGates } from "./descriptions.mjs";
 export { runCheck } from "./cli/check.mjs";
+export { enforcementMap, withEnforcementMap, OPEN as ENFORCEMENT_MAP_OPEN, CLOSE as ENFORCEMENT_MAP_CLOSE } from "./enforcement-map.mjs";
