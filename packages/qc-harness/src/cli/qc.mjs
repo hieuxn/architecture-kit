@@ -12,6 +12,7 @@ const USAGE = `qc — architecture gates
   qc feature <name>      scaffold a feature in the configured anatomy
   qc install-hooks       point git at the kit's pre-commit hook
   qc decisions [id]      where decisions are cited; --squash closes the gaps
+  qc enforcement-map     refresh the generated rule/gate table in docs/enforcement.md
   qc config              print the resolved configuration
 
 Every gate reads qc.config.json. A key it does not set keeps the reference default.`;
@@ -51,6 +52,11 @@ async function main() {
     case "decisions": {
       const { runDecisions } = await import("./decisions.mjs");
       process.exit(await runDecisions(config, rest));
+      return;
+    }
+    case "enforcement-map": {
+      const { runSyncEnforcementMap } = await import("./sync-enforcement-map.mjs");
+      await runSyncEnforcementMap(config);
       return;
     }
     case "config":

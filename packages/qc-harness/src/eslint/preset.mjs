@@ -23,6 +23,12 @@ function ruleOptions(config) {
       resourceFiles: config.storage.resourceFiles,
       driverBinding: config.storage.driverBinding,
     },
+    "cloud-sdk-only-in-adapter": {
+      scopes: config.cloudSdk.scopes,
+      modules: config.cloudSdk.modules,
+      allowedFiles: config.cloudSdk.allowedFiles,
+      allowedPaths: config.cloudSdk.allowedPaths,
+    },
     "tenant-scoped-table": {
       column: config.tenant.column,
       tableFactory: config.tenant.tableFactory,
@@ -64,6 +70,9 @@ const UNIVERSAL = [
   "no-orchestration-in-trigger",
   "no-status-literal",
   "scoped-repository",
+  // Not a layered-architecture concern like the SERVER rules below — a worker or a
+  // composition root outside backend/src needs this exactly as much as backend/src does.
+  "cloud-sdk-only-in-adapter",
 ];
 
 /** Rules that only make sense where the server's storage and ports live. */

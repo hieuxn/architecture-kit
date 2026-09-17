@@ -135,6 +135,33 @@ tester.run("storage-only-in-resource", rules["storage-only-in-resource"], {
   ],
 });
 
+console.log("→", "cloud-sdk-only-in-adapter");
+tester.run("cloud-sdk-only-in-adapter", rules["cloud-sdk-only-in-adapter"], {
+  valid: [
+    { code: 'import { S3Client } from "@aws-sdk/client-s3";', filename: "backend/src/adapters/cloud/aws/s3-gateway.ts" },
+    { code: 'import { S3Client } from "@aws-sdk/client-s3";', filename: "backend/src/main.ts" },
+    { code: 'import { SQSClient } from "@aws-sdk/client-sqs";', filename: "workers/media-process/src/entry.ts" },
+    { code: 'import { readFile } from "node:fs";', filename: "backend/src/features/pins/pipeline.ts" },
+  ],
+  invalid: [
+    {
+      code: 'import { S3Client } from "@aws-sdk/client-s3";',
+      filename: "backend/src/features/pins/pipeline.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import { S3Client } from "@aws-sdk/client-s3";',
+      filename: "workers/media-process/src/handle.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import AWS from "aws-sdk";',
+      filename: "backend/src/features/photos/slices/upload.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+  ],
+});
+
 console.log("→", "no-offset-pagination");
 tester.run("no-offset-pagination", rules["no-offset-pagination"], {
   valid: ["const q = { limit, cursor };"],
@@ -283,6 +310,30 @@ tester.run("storage-only-in-resource", rules["storage-only-in-resource"], {
       code: "import { x } from 'kysely';",
       filename: "/a/features/pins/resource.ts",
       options: [{ modules: ["kysely"], resourceFiles: ["store.ts"], driverBinding: "" }],
+      errors: [{ messageId: "misplaced" }],
+    },
+  ],
+});
+
+console.log("→", "options: cloud-sdk-only-in-adapter scopes, files and paths");
+tester.run("cloud-sdk-only-in-adapter", rules["cloud-sdk-only-in-adapter"], {
+  valid: [
+    {
+      code: "import { Storage } from '@google-cloud/storage';",
+      filename: "/a/adapters/cloud/gcp/bucket.ts",
+      options: [{ scopes: ["@google-cloud"], allowedFiles: [], allowedPaths: ["adapters/cloud/"] }],
+    },
+    {
+      code: "import { Storage } from '@google-cloud/storage';",
+      filename: "/a/worker.ts",
+      options: [{ scopes: ["@google-cloud"], allowedFiles: ["worker.ts"], allowedPaths: [] }],
+    },
+  ],
+  invalid: [
+    {
+      code: "import { Storage } from '@google-cloud/storage';",
+      filename: "/a/features/photos/pipeline.ts",
+      options: [{ scopes: ["@google-cloud"], allowedFiles: [], allowedPaths: ["adapters/cloud/"] }],
       errors: [{ messageId: "misplaced" }],
     },
   ],

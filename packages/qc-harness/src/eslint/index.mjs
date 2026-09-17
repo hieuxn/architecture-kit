@@ -1,3 +1,4 @@
+import cloudSdkOnlyInAdapter from "./rules/cloud-sdk-only-in-adapter.mjs";
 import durableIdempotencyKey from "./rules/durable-idempotency-key.mjs";
 import noCrossFeatureInternals from "./rules/no-cross-feature-internals.mjs";
 import noCommentParagraph from "./rules/no-comment-paragraph.mjs";
@@ -14,6 +15,7 @@ import storageOnlyInResource from "./rules/storage-only-in-resource.mjs";
 import tenantScopedTable from "./rules/tenant-scoped-table.mjs";
 
 export const rules = {
+  "cloud-sdk-only-in-adapter": cloudSdkOnlyInAdapter,
   "durable-idempotency-key": durableIdempotencyKey,
   "no-cross-feature-internals": noCrossFeatureInternals,
   "no-comment-paragraph": noCommentParagraph,
