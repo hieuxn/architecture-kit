@@ -70,6 +70,9 @@ export const defaults = {
     resourceFiles: ["resource.ts", "schema.ts"],
     resourceDirs: ["shared", "slices"],
     triggerFile: "trigger.ts",
+    // Platform and frontend features paths for boundary checks.
+    platform: "frontend/src/platform",
+    frontendFeatures: "frontend/src/features",
     // A repository's own gates. The kit's are proven by its suite; these are not.
     checks: "scripts/gate",
   },
@@ -156,6 +159,7 @@ export const defaults = {
     "saga-tests": true,
     "gate-tests": true,
     "audit-append-only": true,
+    "frontend-boundaries": true,
     "enforcement-map": true,
   },
 

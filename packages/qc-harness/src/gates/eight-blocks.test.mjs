@@ -266,3 +266,94 @@ test("a repository naming no slice-only root may keep the flat anatomy anywhere"
   ];
   assert.deepEqual(checkFeatureAnatomy(features, { sliceOnlyRoots: [] }), []);
 });
+
+test("a slice feature with components directory with index passes", () => {
+  const features = [
+    {
+      feature: "photos",
+      files: [
+        "index.ts",
+        "schema.ts",
+        "trigger.ts",
+        "slices/view-photo.ts",
+        "components/photo-viewer/index.ts",
+        "components/photo-viewer/toolbar.tsx",
+      ],
+    },
+  ];
+  assert.deepEqual(checkFeatureAnatomy(features), []);
+});
+
+test("a slice feature with component view missing index fails", () => {
+  const features = [
+    {
+      feature: "photos",
+      files: [
+        "index.ts",
+        "schema.ts",
+        "trigger.ts",
+        "slices/view-photo.ts",
+        "components/photo-viewer/toolbar.tsx",
+      ],
+    },
+  ];
+  const problems = checkFeatureAnatomy(features);
+  assert.equal(problems.length, 1);
+  assert.equal(problems[0].rule, "missing-component-index");
+});
+
+test("a slice feature with loose component outside a view folder fails", () => {
+  const features = [
+    {
+      feature: "photos",
+      files: [
+        "index.ts",
+        "schema.ts",
+        "trigger.ts",
+        "slices/view-photo.ts",
+        "components/loose-button.tsx",
+      ],
+    },
+  ];
+  const problems = checkFeatureAnatomy(features);
+  assert.equal(problems.length, 1);
+  assert.equal(problems[0].rule, "loose-component");
+});
+
+test("a slice feature with ui fragments in slices fails", () => {
+  const features = [
+    {
+      feature: "blackboard",
+      files: [
+        "index.ts",
+        "schema.ts",
+        "trigger.ts",
+        "slices/list-boards.ts",
+        "slices/board-rail.tsx",
+      ],
+    },
+  ];
+  const problems = checkFeatureAnatomy(features);
+  assert.equal(problems.length, 1);
+  assert.equal(problems[0].rule, "ui-fragment-in-slices");
+});
+
+test("a slice feature with deeply nested components (> depth 3) fails", () => {
+  const features = [
+    {
+      feature: "photos",
+      files: [
+        "index.ts",
+        "schema.ts",
+        "trigger.ts",
+        "slices/view-photo.ts",
+        "components/a/b/c.tsx",
+      ],
+    },
+  ];
+  const problems = checkFeatureAnatomy(features);
+  assert.equal(problems.length, 1);
+  assert.equal(problems[0].rule, "disallowed-subfolder");
+  assert.equal(problems[0].detail, "components/a/b/c.tsx");
+});
+

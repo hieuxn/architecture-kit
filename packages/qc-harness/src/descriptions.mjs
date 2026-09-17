@@ -13,6 +13,7 @@ export const gateDescriptions = Object.freeze({
   "saga-tests": "Every workflow is named by a test that imports no view module",
   "gate-tests": "A repository's own gates each ship a case that must fail",
   "audit-append-only": "The audit log has no update or delete path in any repository",
+  "frontend-boundaries": "Platform remains a thin substrate and never holds feature domain logic or junk drawer directories",
   "enforcement-map": "Every rule names a check, and every check the kit runs is named",
 });
 

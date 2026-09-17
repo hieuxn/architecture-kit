@@ -18,7 +18,7 @@ export const BLOCKS = Object.freeze([
 export const REQUIRED_BLOCKS = Object.freeze(["index", "trigger", "pipeline", "resource"]);
 
 export const SLICE_REQUIRED_ROOTS = Object.freeze(["index", "trigger", "schema"]);
-export const ALLOWED_SUBDIRS = Object.freeze(["slices", "shared"]);
+export const ALLOWED_SUBDIRS = Object.freeze(["slices", "shared", "components"]);
 export const ALLOWED_SHARED_FILES = Object.freeze(["types", "queries", "guards", "runner", "components"]);
 
 const TEST_SUFFIX = ".test.ts";
@@ -37,6 +37,8 @@ function anatomyOf(options = {}) {
     sliceRequired: stems(slice.required ?? SLICE_REQUIRED_ROOTS),
     sliceDir: slice.sliceDir ?? "slices",
     sharedDir: slice.sharedDir ?? "shared",
+    componentsDir: slice.componentsDir ?? "components",
+    allowedSubdirs: slice.allowedSubdirs ?? [slice.sliceDir ?? "slices", slice.sharedDir ?? "shared", slice.componentsDir ?? "components"],
     sharedFiles: stems(slice.sharedFiles ?? ALLOWED_SHARED_FILES),
     blocks: stems([...(block.required ?? []), ...(block.optional ?? [])]).length
       ? stems([...(block.required ?? REQUIRED_BLOCKS), ...(block.optional ?? [])])
@@ -50,7 +52,23 @@ function anatomyOf(options = {}) {
 function checkSliceSubfolder(feature, file, anatomy) {
   const parts = file.split("/");
   const dir = parts[0];
-  if (![anatomy.sliceDir, anatomy.sharedDir].includes(dir) || parts.length > 2) {
+  if (!anatomy.allowedSubdirs.includes(dir)) {
+    return { feature, rule: "disallowed-subfolder", detail: file };
+  }
+  if (dir === anatomy.componentsDir) {
+    if (parts.length > 3) {
+      return { feature, rule: "disallowed-subfolder", detail: file };
+    }
+    if (parts.length === 2) {
+      return {
+        feature,
+        rule: "loose-component",
+        detail: `${file}: UI components must be organized by view or entity under ${anatomy.componentsDir}/<view>/`,
+      };
+    }
+    return null;
+  }
+  if (parts.length > 2) {
     return { feature, rule: "disallowed-subfolder", detail: file };
   }
   const basename = parts[1].replace(/\.test\.(tsx?)$/, "").replace(/\.(tsx?)$/, "");
@@ -60,6 +78,15 @@ function checkSliceSubfolder(feature, file, anatomy) {
   if (dir === anatomy.sharedDir && !anatomy.sharedFiles.includes(basename)) {
     return { feature, rule: "disallowed-shared-file", detail: file };
   }
+  if (dir === anatomy.sliceDir) {
+    if (/-(?:rail|toolbar|dialogs?|fields)(?:\.test)?\.[cm]?[jt]sx?$/.test(file)) {
+      return {
+        feature,
+        rule: "ui-fragment-in-slices",
+        detail: `${file}: UI presentation fragments belong in components/<view>/, not in slices/`,
+      };
+    }
+  }
   return null;
 }
 
@@ -67,6 +94,7 @@ function checkSliceFeature(feature, files, anatomy) {
   const problems = [];
   const roots = new Set();
   let hasSlice = false;
+  const componentViews = new Map();
 
   for (const file of files) {
     if (file.includes("/")) {
@@ -74,6 +102,14 @@ function checkSliceFeature(feature, files, anatomy) {
       if (subProb) {
         problems.push(subProb);
         continue;
+      }
+      if (file.startsWith(`${anatomy.componentsDir}/`)) {
+        const parts = file.split("/");
+        if (parts.length === 3) {
+          const view = parts[1];
+          if (!componentViews.has(view)) componentViews.set(view, new Set());
+          componentViews.get(view).add(parts[2]);
+        }
       }
       if (file.endsWith(TEST_SUFFIX) || file.endsWith(TEST_SUFFIX_TSX)) continue;
       if (file.startsWith(`${anatomy.sliceDir}/`)) hasSlice = true;
@@ -86,6 +122,17 @@ function checkSliceFeature(feature, files, anatomy) {
       continue;
     }
     roots.add(name);
+  }
+
+  for (const [view, viewFiles] of componentViews) {
+    const hasIndex = [...viewFiles].some((f) => /^index\.[cm]?[jt]sx?$/.test(f));
+    if (!hasIndex) {
+      problems.push({
+        feature,
+        rule: "missing-component-index",
+        detail: `${anatomy.componentsDir}/${view}/index.ts: component view requires an index block for discovery`,
+      });
+    }
   }
 
   for (const required of anatomy.sliceRequired) {

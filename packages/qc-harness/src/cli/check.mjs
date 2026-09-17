@@ -21,6 +21,7 @@ import { checkSagaTests, declaredSagas } from "../gates/saga-tests.mjs";
 import { checkGatesAreTested } from "../gates/gate-tests.mjs";
 import { checkAuditAppendOnly } from "../gates/audit-append-only.mjs";
 import { checkEnforcementMap } from "../gates/enforcement-map.mjs";
+import { checkFrontendBoundaries } from "../gates/frontend-boundaries.mjs";
 import { rules as lintRules } from "../eslint/index.mjs";
 import { enabled } from "../config.mjs";
 
@@ -273,6 +274,24 @@ async function internalRouteAgreement(config, routes) {
   );
 }
 
+async function platformFiles(config) {
+  const platformDir = path.join(config.root, config.paths.platform ?? "frontend/src/platform");
+  const rel = relativeTo(config.root);
+  const files = [];
+  async function walk(dir) {
+    for (const entry of await list(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (/node_modules|\/dist\//.test(full)) continue;
+      if (entry.isDirectory()) await walk(full);
+      else if (SOURCE_EXTENSION.test(entry.name)) {
+        files.push({ path: rel(full), contents: await readFile(full, "utf8").catch(() => "") });
+      }
+    }
+  }
+  await walk(platformDir);
+  return files;
+}
+
 /**
  * @param {object} config
  * @param {string} [only] one file — the fast path a post-edit hook takes
@@ -403,6 +422,13 @@ export async function runCheck(config, only) {
   }
   if (enabled(config.gates, "headless-sagas")) {
     lines.push("OK  headless     pipelines are headless and triggers remain thin presenters");
+  }
+  if (enabled(config.gates, "frontend-boundaries")) {
+    const platform = await platformFiles(config);
+    if (platform.length > 0) {
+      problems.push(...checkFrontendBoundaries(platform, contents));
+      lines.push("OK  boundaries   platform remains a thin substrate without domain leaks or junk drawers");
+    }
   }
 
   return { problems, lines };
