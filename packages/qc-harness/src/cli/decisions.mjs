@@ -48,9 +48,12 @@ async function tracked(root) {
 
 async function scan(config) {
   const prefixes = config.citations.prefixes;
+  const exclude = config.decisions.exclude ?? [];
   const sites = new Map();
   const generated = new Map();
   for (const file of await tracked(config.root)) {
+    // A vendored tool cites its own upstream register, never this repository's.
+    if (exclude.some((source) => new RegExp(source).test(file))) continue;
     const contents = await readFile(path.join(config.root, file), "utf8").catch(() => null);
     if (contents === null) continue;
     const target = GENERATED.test(file) ? generated : sites;

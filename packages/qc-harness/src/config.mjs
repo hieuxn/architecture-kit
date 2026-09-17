@@ -31,6 +31,8 @@ export const defaults = {
   decisions: {
     // Content-addressed files: a ledger hashes them, so renumbering a citation inside one reads as tampering.
     immutable: ["(^|/)(drizzle|migrations?)/[^/]*\\.sql$"],
+    // Vendored tooling: its citations resolve against its own upstream register, not this repository's.
+    exclude: [],
   },
 
   thresholds: "quality-thresholds.json",
