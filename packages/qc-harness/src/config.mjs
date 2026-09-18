@@ -105,14 +105,15 @@ export const defaults = {
     driverBinding: "backend/src/infrastructure/db/",
   },
 
-  // A cloud provider's SDK, same reasoning as storage: one seam, so a second provider or a
-  // test double only ever needs one place to differ.
-  cloudSdk: {
-    scopes: ["@aws-sdk", "@azure", "@google-cloud"],
-    modules: ["aws-sdk"],
+  // Any third-party service's SDK, same reasoning as storage: one seam, so a second
+  // provider or a test double only ever needs one place to differ. Cloud, payment,
+  // messaging, search — a repository appends its own vendors rather than replacing the set.
+  externalServices: {
+    scopes: ["@aws-sdk", "@azure", "@google-cloud", "@sendgrid", "@elastic", "@algolia"],
+    modules: ["aws-sdk", "stripe", "braintree", "twilio", "nodemailer", "algoliasearch", "amqplib", "kafkajs"],
     // A composition root wires the concrete client; nothing past it may know the provider.
     allowedFiles: ["main.ts", "entry.ts"],
-    allowedPaths: ["adapters/cloud/"],
+    allowedPaths: ["adapters/"],
   },
 
   // The one module permitted to call fetch or build a URL.
@@ -191,7 +192,7 @@ export const defaults = {
     "no-status-literal": true,
     "scoped-repository": true,
     "storage-only-in-resource": true,
-    "cloud-sdk-only-in-adapter": true,
+    "external-service-only-in-adapter": true,
     "tenant-scoped-table": true,
     "signal-last-param": true,
     "no-raw-fetch": true,
