@@ -16,6 +16,7 @@ export const gateDescriptions = Object.freeze({
   "frontend-boundaries": "Platform remains a thin substrate and never holds feature domain logic or junk drawer directories",
   "test-mirror": "Frontend tests mirror src paths 1:1, and no test is orphaned without a source file",
   "enforcement-map": "Every rule names a check, and every check the kit runs is named",
+  "comment-style": "A comment under infra/ is one line of why, never a paragraph, a banner or code",
 });
 
 /** The gates a consumer can switch on, so a caller need not import the defaults to find out. */

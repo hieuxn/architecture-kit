@@ -23,6 +23,7 @@ import { checkAuditAppendOnly } from "../gates/audit-append-only.mjs";
 import { checkEnforcementMap } from "../gates/enforcement-map.mjs";
 import { checkFrontendBoundaries } from "../gates/frontend-boundaries.mjs";
 import { checkTestMirror } from "../gates/test-mirror.mjs";
+import { checkCommentStyle } from "../gates/comment-style.mjs";
 import { rules as lintRules } from "../eslint/index.mjs";
 import { enabled } from "../config.mjs";
 
@@ -30,6 +31,8 @@ const SKIP = /node_modules|\/dist\/|\.test\.[cm]?[jt]sx?$/;
 const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
 const SOURCE_EXTENSION = /\.([cm]?[jt]sx?)$/;
 const CITABLE_EXTENSION = /\.(tsx?|mjs|md)$/;
+const INFRA_EXTENSIONS = [".tf", ".sh", ".tfvars", ".tfvars.example", ".hcl", ".hcl.example"];
+const INFRA_SKIP = [".lock.hcl"];
 
 const read = (file) => readFile(file, "utf8").catch(() => null);
 const list = (dir, options) => readdir(dir, options).catch(() => []);
@@ -293,6 +296,29 @@ async function platformFiles(config) {
   return files;
 }
 
+function isInfraFile(name) {
+  if (INFRA_SKIP.some((suffix) => name.endsWith(suffix))) return false;
+  return INFRA_EXTENSIONS.some((suffix) => name.endsWith(suffix));
+}
+
+/** Terraform/shell files under the configured infra roots — absent is ordinary, not an error. */
+async function infraFiles(config) {
+  const rel = relativeTo(config.root);
+  const files = [];
+  async function walk(dir) {
+    for (const entry of await list(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (/node_modules|\.terraform/.test(full)) continue;
+      if (entry.isDirectory()) await walk(full);
+      else if (isInfraFile(entry.name)) {
+        files.push({ path: rel(full), contents: await readFile(full, "utf8").catch(() => "") });
+      }
+    }
+  }
+  for (const root of config.paths.infra ?? []) await walk(path.join(config.root, root));
+  return files;
+}
+
 /**
  * @param {object} config
  * @param {string} [only] one file — the fast path a post-edit hook takes
@@ -439,6 +465,14 @@ export async function runCheck(config, only) {
     problems.push(...mirrorProblems);
     if (mirrorProblems.length === 0) {
       lines.push("OK  mirror       frontend tests mirror src paths 1:1, no orphaned test");
+    }
+  }
+
+  if (enabled(config.gates, "comment-style")) {
+    const infra = await infraFiles(config);
+    if (infra.length > 0) {
+      problems.push(...checkCommentStyle(infra, config.comments));
+      lines.push("OK  comments     every comment under infra/ is one line of why, never a paragraph");
     }
   }
 

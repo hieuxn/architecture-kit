@@ -77,6 +77,9 @@ export const defaults = {
     frontendFeatures: "frontend/src/features",
     // A repository's own gates. The kit's are proven by its suite; these are not.
     checks: "scripts/gate",
+    // Terraform/shell roots the comment-style gate scans. Absence is ordinary — not every
+    // repository provisions its own infrastructure.
+    infra: ["infra"],
   },
 
   // Where a tool demands a literal the registry already owns, assert agreement rather
@@ -178,6 +181,7 @@ export const defaults = {
     "frontend-boundaries": true,
     "test-mirror": true,
     "enforcement-map": true,
+    "comment-style": true,
   },
 
   // Gates that produce rather than inspect: a repository's codegen imports these and
