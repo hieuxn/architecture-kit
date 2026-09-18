@@ -129,12 +129,16 @@ paths once, in a gitignored manifest:
 
 ```json
 // .claude/work-order.local.json
-{ "paths": ["frontend/src/platform/**", ".github/workflows/**"] }
+{ "paths": ["frontend/src/platform/**", ".github/workflows/**"], "branch": "platform/rewrite" }
 ```
 
 A `PreToolUse` hook then refuses any Write or Edit outside those globs, for every agent sharing that
-directory — not just the one told to stay in scope. Delete the file, or narrow it, as the next work
-order starts. Absent the file, nothing is restricted, the same opt-in rule every hook here follows.
+directory — not just the one told to stay in scope. The optional `branch` field covers a different
+failure: the shared directory's checked-out branch changing between one command and the next. The
+edit-time hook only warns about it; the installed `pre-commit` hook is what actually refuses the
+commit, since a branch violation is a fact about the commit, not about any one edit. Delete the
+file, or narrow it, as the next work order starts. Absent the file, or absent `branch` within it,
+nothing is restricted — the same opt-in rule every hook here follows.
 
 This covers one working directory shared by several agents. An agent given its own git worktree
 needs nothing further — it already cannot reach another work order's files.
