@@ -135,12 +135,13 @@ tester.run("storage-only-in-resource", rules["storage-only-in-resource"], {
   ],
 });
 
-console.log("→", "cloud-sdk-only-in-adapter");
-tester.run("cloud-sdk-only-in-adapter", rules["cloud-sdk-only-in-adapter"], {
+console.log("→", "external-service-only-in-adapter");
+tester.run("external-service-only-in-adapter", rules["external-service-only-in-adapter"], {
   valid: [
     { code: 'import { S3Client } from "@aws-sdk/client-s3";', filename: "backend/src/adapters/cloud/aws/s3-gateway.ts" },
     { code: 'import { S3Client } from "@aws-sdk/client-s3";', filename: "backend/src/main.ts" },
     { code: 'import { SQSClient } from "@aws-sdk/client-sqs";', filename: "workers/media-process/src/entry.ts" },
+    { code: 'import Stripe from "stripe";', filename: "backend/src/adapters/payments/stripe/gateway.ts" },
     { code: 'import { readFile } from "node:fs";', filename: "backend/src/features/pins/pipeline.ts" },
   ],
   invalid: [
@@ -157,6 +158,26 @@ tester.run("cloud-sdk-only-in-adapter", rules["cloud-sdk-only-in-adapter"], {
     {
       code: 'import AWS from "aws-sdk";',
       filename: "backend/src/features/photos/slices/upload.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import Stripe from "stripe";',
+      filename: "backend/src/features/billing/pipeline.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import Stripe from "stripe";',
+      filename: "backend/src/features/billing/adapters/stripe-client.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import Stripe from "@stripe/stripe-js";',
+      filename: "frontend/src/features/billing/pipeline.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import twilio from "twilio";',
+      filename: "backend/src/features/notifications/slices/send-sms.ts",
       errors: [{ messageId: "misplaced" }],
     },
   ],
@@ -315,8 +336,8 @@ tester.run("storage-only-in-resource", rules["storage-only-in-resource"], {
   ],
 });
 
-console.log("→", "options: cloud-sdk-only-in-adapter scopes, files and paths");
-tester.run("cloud-sdk-only-in-adapter", rules["cloud-sdk-only-in-adapter"], {
+console.log("→", "options: external-service-only-in-adapter scopes, files and paths");
+tester.run("external-service-only-in-adapter", rules["external-service-only-in-adapter"], {
   valid: [
     {
       code: "import { Storage } from '@google-cloud/storage';",
@@ -541,7 +562,7 @@ tester.run("storage-only-in-resource (backslash path)", rules["storage-only-in-r
   ],
 });
 
-tester.run("cloud-sdk-only-in-adapter (backslash path)", rules["cloud-sdk-only-in-adapter"], {
+tester.run("external-service-only-in-adapter (backslash path)", rules["external-service-only-in-adapter"], {
   valid: [
     { code: "import { S3Client } from '@aws-sdk/client-s3';", filename: "backend\\src\\main.ts" },
     { code: "import { S3Client } from '@aws-sdk/client-s3';", filename: "workers\\media-process\\src\\entry.ts" },

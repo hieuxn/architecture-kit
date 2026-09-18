@@ -1,5 +1,5 @@
-import cloudSdkOnlyInAdapter from "./rules/cloud-sdk-only-in-adapter.mjs";
 import durableIdempotencyKey from "./rules/durable-idempotency-key.mjs";
+import externalServiceOnlyInAdapter from "./rules/external-service-only-in-adapter.mjs";
 import noCrossFeatureInternals from "./rules/no-cross-feature-internals.mjs";
 import noCommentParagraph from "./rules/no-comment-paragraph.mjs";
 import noPromiseThen from "./rules/no-promise-then.mjs";
@@ -15,8 +15,8 @@ import storageOnlyInResource from "./rules/storage-only-in-resource.mjs";
 import tenantScopedTable from "./rules/tenant-scoped-table.mjs";
 
 export const rules = {
-  "cloud-sdk-only-in-adapter": cloudSdkOnlyInAdapter,
   "durable-idempotency-key": durableIdempotencyKey,
+  "external-service-only-in-adapter": externalServiceOnlyInAdapter,
   "no-cross-feature-internals": noCrossFeatureInternals,
   "no-comment-paragraph": noCommentParagraph,
   "no-promise-then": noPromiseThen,

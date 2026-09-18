@@ -1,5 +1,5 @@
 // Shared by every rule that restricts a module to specific files or paths — one mechanism,
-// each rule its own semantic boundary (storage, a cloud provider's SDK, ...).
+// each rule its own semantic boundary (storage, an external service's SDK, ...).
 
 import { pathPrefix } from "../options.mjs";
 
