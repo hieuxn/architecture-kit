@@ -11,6 +11,7 @@ const USAGE = `qc — architecture gates
   qc init                scaffold the docs, config, hooks and workflow into this repository
   qc feature <name>      scaffold a feature in the configured anatomy
   qc install-hooks       point git at the kit's pre-commit hook
+  qc work-order-check    refuse to commit on the wrong branch, per .claude/work-order.local.json
   qc decisions [id]      where decisions are cited; --squash closes the gaps
   qc enforcement-map     refresh the generated rule/gate table in docs/enforcement.md
   qc config              print the resolved configuration
@@ -48,6 +49,10 @@ async function main() {
       const { installHooks } = await import("./install-hooks.mjs");
       await installHooks(config);
       return;
+    }
+    case "work-order-check": {
+      const { runWorkOrderCheck } = await import("./work-order-guard.mjs");
+      process.exit(await runWorkOrderCheck(config.root));
     }
     case "decisions": {
       const { runDecisions } = await import("./decisions.mjs");
