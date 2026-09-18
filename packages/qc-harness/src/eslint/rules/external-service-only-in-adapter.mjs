@@ -1,18 +1,21 @@
 // A third-party service is a concrete choice; only the adapter that implements the port, or
-// the composition root that selects a provider, may import its SDK. ADR-0002, docs/architecture.md.
+// the composition root that selects a provider, may import its SDK. The decision to scope a
+// provider behind a port belongs to the repository that adopts this rule — cite its own ADR.
 //
 // Business logic that calls a cloud store, a payment gateway, or a message provider directly
 // has no seam left for a second provider, and no seam for a test double either — the two
 // reasons the port exists in the first place. The list below is a starting point, not a
-// ceiling: a repository names its own vendors in `externalServices`.
+// ceiling: a repository replaces `externalServices` with its own vendor list.
 
 import { filenameOf, moduleGroup, optionsOf, schemaOf, scopeGroup } from "../options.mjs";
 import { isExemptFile } from "./module-boundary.mjs";
 
-const DEFAULT_SCOPES = ["@aws-sdk", "@azure", "@google-cloud", "@sendgrid", "@elastic", "@algolia"];
+const DEFAULT_SCOPES = ["@aws-sdk", "@azure", "@google-cloud", "@sendgrid", "@elastic", "@algolia", "@stripe", "@twilio"];
 const DEFAULT_MODULES = ["aws-sdk", "stripe", "braintree", "twilio", "nodemailer", "algoliasearch", "amqplib", "kafkajs"];
 const DEFAULT_ALLOWED_FILES = ["main.ts", "entry.ts"];
-const DEFAULT_ALLOWED_PATHS = ["adapters/"];
+// Each entry names a category subfolder, not a bare "adapters/": a feature-local folder that
+// happens to be named adapters/ must not become exempt by accident.
+const DEFAULT_ALLOWED_PATHS = ["adapters/cloud/", "adapters/payments/", "adapters/messaging/", "adapters/search/"];
 
 export default {
   meta: {

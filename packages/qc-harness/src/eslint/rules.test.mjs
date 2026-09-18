@@ -166,6 +166,16 @@ tester.run("external-service-only-in-adapter", rules["external-service-only-in-a
       errors: [{ messageId: "misplaced" }],
     },
     {
+      code: 'import Stripe from "stripe";',
+      filename: "backend/src/features/billing/adapters/stripe-client.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
+      code: 'import Stripe from "@stripe/stripe-js";',
+      filename: "frontend/src/features/billing/pipeline.ts",
+      errors: [{ messageId: "misplaced" }],
+    },
+    {
       code: 'import twilio from "twilio";',
       filename: "backend/src/features/notifications/slices/send-sms.ts",
       errors: [{ messageId: "misplaced" }],
